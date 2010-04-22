@@ -3,23 +3,29 @@ module Tokens
 type Tokens =
 
     // Numeric types
-
-    | INT of int        | FLOAT of float
+    | INT of int
+    | FLOAT of float
 
     // Constants
-
-    | PI                | E
+    | PI
+    | E
 
     // Trig functions
-
-    | SIN               | COS           | TAN
+    | SIN
+    | COS
+    | TAN
 
     // Operators
-
-    | PLUS              | DASH          | ASTERISK
-
-    | SLASH             | CARET
+    | PLUS
+    | DASH
+    | ASTERISK
+    | SLASH
+    | CARET
 
     // Misc
+    | LPAREN
+    | RPAREN
+    | EOF
 
-    | LPAREN            | RPAREN        | EOF
+    // Identifier
+    | ID of string

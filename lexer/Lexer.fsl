@@ -11,17 +11,12 @@ module Lexer
 
 open System
 
-
 // Open our module which defines the token types
-
 open Tokens
 
 // These two modules define goo needed to use fslex
-
 open Lexing
-
 }
-
 
 // Base regular expressions
 
@@ -31,51 +26,55 @@ let whitespace = [' ' '\t' ]
 
 let newline = ('\n' | '\r' '\n')
 
+let alpha = (['a'-'z'] | ['A'-'Z'])
 
 rule parsetokens = parse
 
 // ----------------------------
 
-| whitespace      { parsetokens lexbuf }
+| whitespace { parsetokens lexbuf }
 
-| newline         {  parsetokens lexbuf }
-
-// ----------------------------
-
-| ['-']?digit+  { INT (Int32.Parse(lexeme lexbuf)) }
-
-| ['-']?digit+('.'digit+)?(['e''E']digit+)?   { FLOAT (Double.Parse(lexeme lexbuf)) }
+| newline { parsetokens lexbuf }
 
 // ----------------------------
 
-| "pi"            { PI }
+// TODO: We think we need to fix this regex to make it fail w/ error if it encounters a non-digit non-space character.
+| ['-']?digit+ { INT (Int32.Parse(lexeme lexbuf)) }
 
-| "e"             { E }
+| ['-']?digit+('.'digit+)?(['e''E']digit+)? { FLOAT (Double.Parse(lexeme lexbuf)) }
 
-// ----------------------------
-
-| "sin"           { SIN }
-
-| "cos"           { COS }
-
-| "tan"           { TAN }
-
-// ----------------------------
-
-| "+"             { PLUS }
-
-| "-"             { DASH }
-
-| "*"             { ASTERISK }
-
-| "/"             { SLASH }
-
-| "^"             { CARET }
-
-| "("             { LPAREN }
-
-| ")"             { RPAREN }
+// Write a regular expression that matches Identifiers, which are defined as a single alphabetic character followed by zero or more 
+//    alphabetic, numeric, underscore (_), and question mark (?) characters. No keyword or primitive name may be used as an id.
+// Write ourFunc (in F#) that takes string, matches against known keywords such as "pi" or "e", and produces the appropriate token.
+//| ^alpha+( alpha | digit | _ | \? )*   { parseIdentifier (lexeme lexbuf) }
+| alpha+( alpha | digit | _ | '?' )*   { let temp = (lexeme lexbuf) 
+                                   match temp with
+                                       | "pi" -> PI
+                                       | "e" -> E
+                                       | "sin" -> SIN
+                                       | "cos" -> COS
+                                       | "tan" -> TAN
+                                       | _ -> ID (temp)
+                                 }
 
 // ----------------------------
 
-| eof             { EOF }
+| "+" { PLUS }
+
+| "-" { DASH }
+
+| "*" { ASTERISK }
+
+| "/" { SLASH }
+
+| "^" { CARET }
+
+| "(" { LPAREN }
+
+| ")" { RPAREN }
+
+// ----------------------------
+
+| eof { EOF }
+
+
