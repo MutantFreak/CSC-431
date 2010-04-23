@@ -30,7 +30,6 @@ let parse lexbuf =
 
         // Add the token to our list
         tokenList <- tokenList @ [parsedToken]
-   
 
         if parsedToken = Tokens.EOF then
             keepParsing <- false

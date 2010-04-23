@@ -28,6 +28,8 @@ let newline = ('\n' | '\r' '\n')
 
 let alpha = (['a'-'z'] | ['A'-'Z'])
 
+let notAlphaNumericUnderQuestion = ([^'a'-'z'] | [^'A'-'Z'] | [^'0'-'9'] | [^'_'] | [^'?'])*
+
 rule parsetokens = parse
 
 // ----------------------------
@@ -47,17 +49,33 @@ rule parsetokens = parse
 //    alphabetic, numeric, underscore (_), and question mark (?) characters. No keyword or primitive name may be used as an id.
 // Write ourFunc (in F#) that takes string, matches against known keywords such as "pi" or "e", and produces the appropriate token.
 //| ^alpha+( alpha | digit | _ | \? )*   { parseIdentifier (lexeme lexbuf) }
-| alpha+( alpha | digit | _ | '?' )*   { let temp = (lexeme lexbuf) 
-                                   match temp with
-                                       | "pi" -> PI
-                                       | "e" -> E
-                                       | "sin" -> SIN
-                                       | "cos" -> COS
-                                       | "tan" -> TAN
-                                       | _ -> ID (temp)
-                                 }
+| alpha( alpha | digit | '_' | '?' )*           {
+                                                  let temp = (lexeme lexbuf)
+                                                  match temp with
+                                                      | "pi" -> PI
+                                                      | "e" -> E
+                                                      | "sin" -> SIN
+                                                      | "cos" -> COS
+                                                      | "tan" -> TAN
+                                                      | "true" -> TRUE
+                                                      | "false" -> FALSE
+                                                      | "new" -> NEW
+                                                      | "if" -> IF
+                                                      | "else" -> ELSE
+                                                      | "while" -> WHILE
+                                                      | "function" -> FUNCTION
+                                                      | _ -> ID (temp)
+                                                }
 
-// ----------------------------
+// Regex to find strings that are in quotes. Removes the resulting quotes from the beginnign and end of the sting
+// before creating a STRING with that string as its field.
+| '"'(_*)'"'        {
+                      let temp = (lexeme lexbuf)
+                      let newTemp = String.sub temp 1 (String.length temp - 2)
+                      STRING (newTemp)
+                    }
+
+// ---------------------------- 
 
 | "+" { PLUS }
 
@@ -72,6 +90,34 @@ rule parsetokens = parse
 | "(" { LPAREN }
 
 | ")" { RPAREN }
+
+| "{" { LCURLY }
+
+| "}" { RCURLY }
+
+| "!" { BANG }
+
+| ";" { SEMI }
+
+| "." { DOT }
+
+| "," { COMMA }
+
+| "==" { DBLEQUAL }
+
+| "=" { EQUAL }
+
+| "<" { LT }
+
+| ">" { GR }
+
+| "<=" { LTEQ }
+
+| ">=" { GREQ }
+
+| "&&" { AND }
+
+| "||" { OR }
 
 // ----------------------------
 
