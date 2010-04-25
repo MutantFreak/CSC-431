@@ -34,4 +34,3 @@ and prim =
     | PrintP | ReadLineP
     | NewArrayP | ArrayRefP | ArraySetP | ArrayMaxP
     with override self.ToString () = (sprintf "%A" self)
-
