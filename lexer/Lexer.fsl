@@ -49,37 +49,33 @@ rule parsetokens = parse
                                                       | "else" -> ELSETok
                                                       | "while" -> WHILETok
                                                       | "function" -> FUNCTIONTok
+                                                      | "var" -> VARTok
                                                       | _ -> IDTok (temp)
                                                 }
 // ----------------------------
-|"&&"   { ANDTok }
-|"||"   { ORTok }
-|"+"    { PLUSTok }
-|"*"    { TIMESTok }
-|"/"    { DIVTok }
-|"<"    { LTTok }
-|">"    { GTTok }
-|"<="   { LEQTok }
-|">="   { GEQTok }
-|"=="   { EQTok }
-|";"    { SEMICOLONTok }
-//OUR CODE
-|"^"    { CARETTok }
-|"=="    { DOUBLEEQTok }
-|"("    { LPARENTok }
-|")"    { RPARENTok }
-|"{"    { LCURLYTok }
-|"}"    { RCURLYTok }
-|"!"    { BANGTok }
-|"."    { DOTTok }
-|","    { COMMATok }
+| "&&"   { ANDTok }
+| "||"   { ORTok }
+| "+"    { PLUSTok }
+| "*"    { TIMESTok }
+| "/"    { DIVTok }
+| "<"    { LTTok }
+| ">"    { GTTok }
+| "<="   { LEQTok }
+| ">="   { GEQTok }
+| "=="   { EQTok }
+| ";"    { SEMICOLONTok }
+// OUR CODE
+| "^"    { CARETTok }
+| "=="    { DOUBLEEQTok }
+| "("    { LPARENTok }
+| ")"    { RPARENTok }
+| "{"    { LCURLYTok }
+| "}"    { RCURLYTok }
+| "!"    { BANGTok }
+| "."    { DOTTok }
+| ","    { COMMATok }
 // ----------------------------
 | eof             { EOFTok }
-
-
-
-
-
 
 
 
