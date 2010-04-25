@@ -1,15 +1,15 @@
-all : ParserTests.exe
+all : main.exe
 
 PARSERSOURCES = AST.fs RealParser.fsi RealParser.fs Lexer.fs
 
-FSCFLAGS = #-I:bin/
-FSC = ~jcswenso/fsc
-FSLEX = mono ~clements/FSharpPowerPack-1.9.9.9/bin/fslex.exe
-FSYACC = mono ~clements/FSharpPowerPack-1.9.9.9/bin/fsyacc.exe
-CONSOLETESTER = xunit.console.exe
+FSCFLAGS = -I:/Users/clements/FSharpPowerPack-1.9.9.9/bin/
+FSC = mono ~/FSharp/bin/fsc.exe
+FSLEX = mono ~/FSharpPowerPack-1.9.9.9/bin/fslex.exe
+FSYACC = mono ~/FSharpPowerPack-1.9.9.9/bin/fsyacc.exe
+CONSOLETESTER = ~/xunit/xunit.console.exe
 
 Parser.dll :${PARSERSOURCES}
-	${FSC} ${FSCFLAGS} -a -o Parser.dll -r:FSharp.PowerPack.dll ${PARSERSOURCES}
+	${FSC} ${FSCFLAGS} -a -o parser.dll -r:FSharp.PowerPack.dll ${PARSERSOURCES}
 
 # use fslex to compile the lexer spec
 Lexer.fs : Lexer.fsl
@@ -30,8 +30,6 @@ RealParser.fsi : RealParser.fs
 ParserTests.exe : Parser.dll ParserTests.fs
 	${FSC} ${FSCFLAGS} -r:xunit.dll -r:FsTest.dll -r:Parser.dll ParserTests.fs
 
-test : ParserTests.exe
+runtests : ParserTests.exe
 	mono ${CONSOLETESTER} ParserTests.exe
 
-clean : 
-	rm Lexer.fs ParserTests.exe RealParser.fs RealParser.fsi Parser.fsi Parser.fs Parser.dll

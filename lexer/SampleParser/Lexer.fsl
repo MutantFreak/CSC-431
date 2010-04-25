@@ -29,7 +29,6 @@ let getLexemeString (lexbuf : LexBuffer<_>) = System.Text.Encoding.ASCII.GetStri
 let digit = ['0'-'9']
 let whitespace = [' ' '\t' ]
 let newline = ('\n' | '\r' '\n')
-let alpha = (['a'-'z'] | ['A'-'Z'])
  
 rule parsetokens = parse
 // ----------------------------
@@ -38,19 +37,6 @@ rule parsetokens = parse
 // ----------------------------
 | ['-']?digit+  { INTTok (Int32.Parse (getLexemeString lexbuf)) }
 | ['-']?digit+('.'digit+)?(['e''E']digit+)?   { DOUBLETok (Double.Parse(getLexemeString lexbuf)) }
-// ----------------------------
-| alpha( alpha | digit | '_' | '?' )*           {
-                                                  let temp = (getLexemeString lexbuf)
-                                                  match temp with
-                                                      | "true" -> TRUETok
-                                                      | "false" -> FALSETok
-                                                      | "new" -> NEWTok
-                                                      | "if" -> IFTok
-                                                      | "else" -> ELSETok
-                                                      | "while" -> WHILETok
-                                                      | "function" -> FUNCTIONTok
-                                                      | _ -> IDTok (temp)
-                                                }
 // ----------------------------
 |"&&"   { ANDTok }
 |"||"   { ORTok }
@@ -63,23 +49,6 @@ rule parsetokens = parse
 |">="   { GEQTok }
 |"=="   { EQTok }
 |";"    { SEMICOLONTok }
-//OUR CODE
-|"^"    { CARETTok }
-|"=="    { DOUBLEEQTok }
-|"("    { LPARENTok }
-|")"    { RPARENTok }
-|"{"    { LCURLYTok }
-|"}"    { RCURLYTok }
-|"!"    { BANGTok }
-|"."    { DOTTok }
-|","    { COMMATok }
 // ----------------------------
 | eof             { EOFTok }
-
-
-
-
-
-
-
 
