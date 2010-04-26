@@ -42,7 +42,8 @@ start: Prog { BeginExp ($1) }
 Prog:
   | Stmt Prog                                               { $1 :: $2 }
   | EOFTok                                                  { [] }
-
+  |                                                          { [] }
+  
 Stmt:
 // An expression followed by a semicolon.
   | Expr SEMICOLONTok                                                                         { $1 }
@@ -50,8 +51,6 @@ Stmt:
   | IFTok LPARENTok Expr RPARENTok LCURLYTok Prog RCURLYTok                                   { IfExp ($3, BeginExp ($6), BeginExp ([]) ) }
 // if & else
   | IFTok LPARENTok Expr RPARENTok LCURLYTok Prog RCURLYTok ELSETok LCURLYTok Prog RCURLYTok  { IfExp ($3, BeginExp ($6), BeginExp ($10) ) }
-// while loops no body
-  | WHILETok LPARENTok Expr RPARENTok LCURLYTok RCURLYTok                                     { WhileExp ($3, BeginExp ([]) ) }
 // while loops with body
   | WHILETok LPARENTok Expr RPARENTok LCURLYTok Prog RCURLYTok                                { WhileExp ($3, BeginExp ($6) ) }
 // var declaration
