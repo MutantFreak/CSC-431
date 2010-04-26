@@ -57,6 +57,10 @@ Stmt:
   | IFTok LPARENTok Expr RPARENTok LCURLYTok Prog RCURLYTok ELSETok LCURLYTok RCURLYTok       { IfExp ($3, BeginExp ($6), BeginExp ([]) ) }
 // if & else. Both have body's.
   | IFTok LPARENTok Expr RPARENTok LCURLYTok Prog RCURLYTok ELSETok LCURLYTok Prog RCURLYTok  { IfExp ($3, BeginExp ($6), BeginExp ($10) ) }
+// while loops no body
+  | WHILETok LPARENTok Expr RPARENTok LCURLYTok RCURLYTok                                     { WhileExp ($3, BeginExp ([]) ) }
+// while loops with body
+  | WHILETok LPARENTok Expr RPARENTok LCURLYTok Prog RCURLYTok                                { WhileExp ($3, BeginExp ($6) ) }
 // var assignment
   | VARTok IDTok EQTok Expr SEMICOLONTok Prog                                                 { LetExp ($2, $4, BeginExp ($6)) }
 
