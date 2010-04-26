@@ -50,6 +50,7 @@ rule parsetokens = parse
                                                       | "while" -> WHILETok
                                                       | "function" -> FUNCTIONTok
                                                       | "var" -> VARTok
+                                                      | "return" -> RETURNTok
                                                       | _ -> IDTok (temp)
                                                 }
 // ----------------------------

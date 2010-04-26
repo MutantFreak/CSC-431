@@ -25,6 +25,7 @@ open AST
 %token IFTok ELSETok WHILETok
 %token <string> STRINGTok
 %token NEWTok FUNCTIONTok VARTok
+%token RETURNTok
 
 // This is the type of the data produced by a successful reduction of the 'start'
 // symbol:
@@ -63,6 +64,8 @@ Stmt:
   | WHILETok LPARENTok Expr RPARENTok LCURLYTok Prog RCURLYTok                                { WhileExp ($3, BeginExp ($6) ) }
 // var assignment
   | VARTok IDTok EQTok Expr SEMICOLONTok Prog                                                 { LetExp ($2, $4, BeginExp ($6)) }
+// return expressions
+  | RETURNTok Expr SEMICOLONTok                                                               { ReturnExp ($2) }
 
 // Expr is level7
 Expr:
