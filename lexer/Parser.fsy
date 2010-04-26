@@ -42,7 +42,7 @@ start: Prog { BeginExp ($1) }
 Prog:
   | Stmt Prog                                               { $1 :: $2 }
   | EOFTok                                                  { [] }
-  |                                                          { [] }
+  |                                                         { [] }
   
 Stmt:
 // An expression followed by a semicolon.
@@ -62,16 +62,21 @@ Stmt:
 // field setting eg: x.y = 3
   | Expr DOTTok IDTok EQTok Expr                                                              { FieldSetExp ($1, $3, $5) }
 // Function declarations, with parameters
-//  | FUNCTIONTok IDTok LPARENTok Params RPARENTok LCURLYTok Prog RCURLYTok                     { LetrecExp ($4, $7) }
+//  | FUNCTIONTok IDTok LPARENTok Params RPARENTok LCURLYTok Prog RCURLYTok Prog                { LetrecExp ([funbinding ($2, $4, $7)], $9) }
 
 // Expr is level7
 Expr:
+    //TODO: put parentheses here
   | Level7                                      { $1 }
 
 //Params:
-//  | 
+//  | Param Params                                { $1 :: $2 }
+      // No params
 //  |                                             { [] }
 
+//Param:
+//  | IDTok COMMATok                                { $1 }
+//  | IDTok                                         { $1 }
 
 Level0:
   | TRUETok                               { (BoolExp (true)) }
@@ -141,7 +146,7 @@ Level7:
 //  | ( ‹expr› )
 //  | ‹id› ( ‹arglist› )
 //  | ( ‹expr› ) ( ‹arglist› )
-//  | ‹expr› ‹binop› ‹expr›
+//  | ‹expr› ‹binop› ‹expr›                        done
 //  | ! ‹expr›                                     done
 //  | ‹expr› . ‹id›                                done
 //  | ‹expr› . ‹id› ( ‹arglist› )

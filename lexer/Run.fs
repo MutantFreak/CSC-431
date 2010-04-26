@@ -24,3 +24,12 @@ let parseString (str : string) =
 
 
 printf "Hello World!\n"
+
+printf "AST=: %A\n" (parseString "return 0;")
+printf "AST=: %A\n" (parseString "true;")
+printf "AST=: %A\n" (parseString "3;")
+printf "AST=: %A\n" (parseString "")
+
+printf "AST=: %A\n" (parseString "!x.y;")
+//printf "AST=: %A\n" (parseString "if(){return 0;}")
+//printf "AST=: %A\n" (parseString "if(true){}")
