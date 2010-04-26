@@ -29,7 +29,13 @@ RealParser.fsi : RealParser.fs
 
 ParserTests.exe : Parser.dll ParserTests.fs
 	${FSC} ${FSCFLAGS} -r:xunit.dll -r:FsTest.dll -r:Parser.dll ParserTests.fs
+	
+Run.exe : Parser.dll Run.fs
+	${FSC} ${FSCFLAGS} -r:Parser.dll Run.fs
 
+run : Run.exe
+	mono Run.exe
+	
 test : ParserTests.exe
 	mono ${CONSOLETESTER} ParserTests.exe
 
