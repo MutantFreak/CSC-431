@@ -25,6 +25,7 @@ let parseString (str : string) =
 printf "======WORKS======\n"
 printf "AST=: %A\n" (parseString "10+55;")
 printf "AST=: %A\n" (parseString "10+4*5;")
+printf "AST=: %A\n" (parseString "10+4+5;")
 printf "AST=: %A\n" (parseString "10*4+5;")
 printf "AST=: %A\n" (parseString "true;")
 printf "AST=: %A\n" (parseString "4 == 2;")
@@ -32,13 +33,17 @@ printf "AST=: %A\n" (parseString "return 0;")
 printf "AST=: %A\n" (parseString "x.y;")
 printf "AST=: %A\n" (parseString "var x = 3;")
 printf "AST=: %A\n" (parseString "!true;")
+printf "AST=: %A\n" (parseString "3;")
 printf "AST=: %A\n" (parseString "if(true){}")
+printf "AST=: %A\n" (parseString "if(true){3;}")
+printf "AST=: %A\n" (parseString "if(true){return 0;}")
 printf "AST=: %A\n" (parseString "if(true){return 0;}else{return 1;}")
 printf "AST=: %A\n" (parseString "while(true){return 0;}")
 
 
 printf "======TESTING======\n"
 printf "Token=: %A\n" (lexString "!x.y;") 
+//printf "Token=: %A\n" (lexString "\"abc\"")
 printf "AST=: %A\n" (parseString "!x.y;") 
 printf "AST=: %A\n" (parseString "2 + 1 > 2;") 
 printf "AST=: %A\n" (parseString "3 <= 23 +3;") 

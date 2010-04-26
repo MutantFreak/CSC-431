@@ -13,6 +13,7 @@ open Parser
 // These two modules define goo needed to use fslex
 open Microsoft.FSharp.Text.Lexing
 
+
 (*let inc_lnum bol pos =
   let lnum = pos.pos_lnum in
   {pos with pos_lnum =  lnum+1; pos_bol = bol }
@@ -53,6 +54,14 @@ rule parsetokens = parse
                                                       | "return" -> RETURNTok
                                                       | _ -> IDTok (temp)
                                                 }
+
+// before creating a STRING with that string as its field.
+| '"'(_*)'"'       {
+                      let temp = (getLexemeString lexbuf)
+                      let newTemp = temp.Substring (1, (String.length (temp) - 2) )
+                      STRINGTok (newTemp)
+                   }
+
 // ----------------------------
 | "&&"   { ANDTok }
 | "||"   { ORTok }

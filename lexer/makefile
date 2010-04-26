@@ -5,7 +5,7 @@ PARSERSOURCES = AST.fs RealParser.fsi RealParser.fs Lexer.fs
 FSCFLAGS = #-I:bin/
 FSC = ~jcswenso/fsc
 FSLEX = mono ~clements/FSharpPowerPack-1.9.9.9/bin/fslex.exe
-FSYACC = mono ~clements/FSharpPowerPack-1.9.9.9/bin/fsyacc.exe
+FSYACC = mono ~clements/FSharpPowerPack-1.9.9.9/bin/fsyacc.exe -v
 CONSOLETESTER = xunit.console.exe
 
 Parser.dll :${PARSERSOURCES}

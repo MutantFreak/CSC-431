@@ -37,46 +37,46 @@ open AST
 // These are the rules of the grammar along with the F# code of the 
 // actions executed as rules are reduced.  In this case the actions 
 // produce data using F# data construction terms.
-start: Prog { BeginExp ($1) }
+start: Prog                                    { BeginExp ($1) }
 
 Prog:
-  | Stmt Prog                                               { $1 :: $2 }
-  | EOFTok                                                  { [] }
-  |                                                         { [] }
+  | StmtSeq                                             { $1 }
+  | EOFTok                                              { [] }
   
-Stmt:
+StmtSeq:
 // An expression followed by a semicolon.
-  | Expr SEMICOLONTok                                                                         { $1 }
+  | Expr SEMICOLONTok StmtSeq                                                                        { $1 :: $3 }
 // if 
-  | IFTok LPARENTok Expr RPARENTok LCURLYTok Prog RCURLYTok                                   { IfExp ($3, BeginExp ($6), BeginExp ([]) ) }
+  | IFTok LPARENTok Expr RPARENTok LCURLYTok StmtSeq RCURLYTok StmtSeq                                  { IfExp ($3, BeginExp ($6), BeginExp ([]) ) :: $8}
 // if & else
-  | IFTok LPARENTok Expr RPARENTok LCURLYTok Prog RCURLYTok ELSETok LCURLYTok Prog RCURLYTok  { IfExp ($3, BeginExp ($6), BeginExp ($10) ) }
+  | IFTok LPARENTok Expr RPARENTok LCURLYTok Prog RCURLYTok ELSETok LCURLYTok StmtSeq RCURLYTok StmtSeq { IfExp ($3, BeginExp ($6), BeginExp ($10) ) :: $12 }
 // while loops with body
-  | WHILETok LPARENTok Expr RPARENTok LCURLYTok Prog RCURLYTok                                { WhileExp ($3, BeginExp ($6) ) }
+  | WHILETok LPARENTok Expr RPARENTok LCURLYTok StmtSeq RCURLYTok StmtSeq                               { WhileExp ($3, BeginExp ($6) ) :: $8 }
 // var declaration
-  | VARTok IDTok EQTok Expr SEMICOLONTok Prog                                                 { LetExp ($2, $4, BeginExp ($6)) }
+  | VARTok IDTok EQTok Expr SEMICOLONTok StmtSeq                                                     { [LetExp ($2, $4, BeginExp ($6))] }
 // var assignment
-  | IDTok EQTok Expr SEMICOLONTok Prog                                                        { SetExp ($1, $3) }
+  | IDTok EQTok Expr SEMICOLONTok StmtSeq                                                            { SetExp ($1, $3) :: $5 }
 // return expressions
-  | RETURNTok Expr SEMICOLONTok                                                               { ReturnExp ($2) }
+  | RETURNTok Expr SEMICOLONTok StmtSeq                                                              { ReturnExp ($2) :: $4 }
 // field setting eg: x.y = 3
-  | Expr DOTTok IDTok EQTok Expr                                                              { FieldSetExp ($1, $3, $5) }
+  | Expr DOTTok IDTok EQTok Expr StmtSeq                                                             { FieldSetExp ($1, $3, $5) :: $6 }
 // Function declarations, with parameters
-//  | FUNCTIONTok IDTok LPARENTok Params RPARENTok LCURLYTok Prog RCURLYTok Prog                { LetrecExp ([funbinding ($2, $4, $7)], $9) }
+  | FUNCTIONTok IDTok LPARENTok Params RPARENTok LCURLYTok StmtSeq RCURLYTok StmtSeq                    { [LetrecExp ([($2, $4, BeginExp ($7))], BeginExp($9))] }
+  |                                                                                               { [] }
 
 // Expr is level7
 Expr:
     //TODO: put parentheses here
   | Level7                                      { $1 }
 
-//Params:
-//  | Param Params                                { $1 :: $2 }
+Params:
+  | Param Params                                { $1 :: $2 }
       // No params
-//  |                                             { [] }
+  |                                             { [] }
 
-//Param:
-//  | IDTok COMMATok                                { $1 }
-//  | IDTok                                         { $1 }
+Param:
+  | IDTok COMMATok                                { $1 }
+  | IDTok                                         { $1 }
 
 Level0:
   | TRUETok                               { (BoolExp (true)) }
@@ -85,13 +85,14 @@ Level0:
   | DOUBLETok                             { (DoubleExp $1) }
   | IDTok                                 { (ID $1) }
   | STRINGTok                             { (StringExp $1) }
+ // parenthesized expression
 
 // TODO: Add in expr DOTTok Level0
 // Consider adding another level just for Id's, so that it could be expr DOTTok IDTok
 // Also consider making Expr DOTTok Level0 into Expr DOTTok IDTok
 // Level0
 Level1:
-    | Expr DOTTok IDTok                   { FieldRefExp ($1, $3) }
+    | Level0 DOTTok IDTok                   { FieldRefExp ($1, $3) }
     | Level0                              { $1 }
 
 Level2:
@@ -99,29 +100,29 @@ Level2:
     | Level1                              { $1 }
 
 Level3:
-    | Level2 TIMESTok Level2              { PrimExp (TimesP, [$1; $3]) }
-    | Level2 DIVTok Level2                { PrimExp (DivP, [$1; $3]) }
+    | Level3 TIMESTok Level2              { PrimExp (TimesP, [$1; $3]) }
+    | Level3 DIVTok Level2                { PrimExp (DivP, [$1; $3]) }
     | Level2                              { $1 }
 
 Level4:
-    | Level3 PLUSTok Level3               { PrimExp (PlusP, [$1; $3]) }
-    | Level3 MINUSTok Level3              { PrimExp (MinusP, [$1; $3]) }
+    | Level4 PLUSTok Level3               { PrimExp (PlusP, [$1; $3]) }
+    | Level4 MINUSTok Level3              { PrimExp (MinusP, [$1; $3]) }
     | Level3                              { $1 }
 
 Level5:
-    | Level4 GTTok Level4                 { PrimExp (GTP, [$1; $3]) }
-    | Level4 LTTok Level4                 { PrimExp (LTP, [$1; $3]) }
-    | Level4 GEQTok Level4                { PrimExp (GEqP, [$1; $3]) }
-    | Level4 LEQTok Level4                { PrimExp (LEqP, [$1; $3]) }
+    | Level5 GTTok Level4                 { PrimExp (GTP, [$1; $3]) }
+    | Level5 LTTok Level4                 { PrimExp (LTP, [$1; $3]) }
+    | Level5 GEQTok Level4                { PrimExp (GEqP, [$1; $3]) }
+    | Level5 LEQTok Level4                { PrimExp (LEqP, [$1; $3]) }
     | Level4                              { $1 }
 
 Level6:
-    | Level5 ANDTok Level5                { PrimExp (AndP, [$1; $3]) }
-    | Level5 ORTok Level5                 { PrimExp (OrP, [$1; $3]) }
+    | Level6 ANDTok Level5                { PrimExp (AndP, [$1; $3]) }
+    | Level6 ORTok Level5                 { PrimExp (OrP, [$1; $3]) }
     | Level5                              { $1 }
 
 Level7:
-    | Level6 DOUBLEEQTok Level6           { PrimExp (EqP, [$1; $3]) }
+    | Level7 DOUBLEEQTok Level6           { PrimExp (EqP, [$1; $3]) }
     | Level6                              { $1 }
 
 
