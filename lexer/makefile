@@ -40,4 +40,4 @@ test : ParserTests.exe
 	mono ${CONSOLETESTER} ParserTests.exe
 
 clean : 
-	rm Lexer.fs ParserTests.exe RealParser.fs RealParser.fsi Parser.fsi Parser.fs Parser.dll
+	rm Lexer.fs Run.exe ParserTests.exe RealParser.fs RealParser.fsi Parser.fsi Parser.fs Parser.dll
