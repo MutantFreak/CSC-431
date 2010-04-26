@@ -56,17 +56,18 @@ rule parsetokens = parse
 | "&&"   { ANDTok }
 | "||"   { ORTok }
 | "+"    { PLUSTok }
+| "-"    { MINUSTok }
 | "*"    { TIMESTok }
 | "/"    { DIVTok }
 | "<"    { LTTok }
 | ">"    { GTTok }
 | "<="   { LEQTok }
 | ">="   { GEQTok }
-| "=="   { EQTok }
+| "="    { EQTok }
 | ";"    { SEMICOLONTok }
 // OUR CODE
 | "^"    { CARETTok }
-| "=="    { DOUBLEEQTok }
+| "=="   { DOUBLEEQTok }
 | "("    { LPARENTok }
 | ")"    { RPARENTok }
 | "{"    { LCURLYTok }

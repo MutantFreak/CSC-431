@@ -33,8 +33,6 @@ open AST
 
 %%
 
-// Current Problem: On line 53, $6 is evaluating a Prog. This returns a list. However, the body of the if is expecting a single expression.
-
 // These are the rules of the grammar along with the F# code of the 
 // actions executed as rules are reduced.  In this case the actions 
 // produce data using F# data construction terms.
@@ -74,6 +72,7 @@ Level0:
   | INTTok                                { (IntExp $1) }
   | DOUBLETok                             { (DoubleExp $1) }
   | IDTok                                 { (ID $1) }
+  | STRINGTok                             { (StringExp $1) }
 
 // TODO: Add in expr DOTTok Level0
 // Consider adding another level just for Id's, so that it could be expr DOTTok IDTok
