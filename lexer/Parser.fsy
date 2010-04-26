@@ -62,8 +62,10 @@ Stmt:
   | WHILETok LPARENTok Expr RPARENTok LCURLYTok RCURLYTok                                     { WhileExp ($3, BeginExp ([]) ) }
 // while loops with body
   | WHILETok LPARENTok Expr RPARENTok LCURLYTok Prog RCURLYTok                                { WhileExp ($3, BeginExp ($6) ) }
-// var assignment
+// var declaration
   | VARTok IDTok EQTok Expr SEMICOLONTok Prog                                                 { LetExp ($2, $4, BeginExp ($6)) }
+// var assignment
+  | IDTok EQTok Expr SEMICOLONTok Prog                                                        { SetExp ($1, $3) }
 // return expressions
   | RETURNTok Expr SEMICOLONTok                                                               { ReturnExp ($2) }
 
