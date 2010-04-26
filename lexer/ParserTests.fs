@@ -32,6 +32,7 @@ let lexerTests () =
     (lexString "a.2.3 b")                 |> should equal [IDTok "a";DOTTok;DOUBLETok 2.3;IDTok "b"]
     (lexString "true false new else if")  |> should equal [TRUETok;FALSETok;NEWTok;ELSETok;IFTok]
     (lexString "while function var q")    |> should equal [WHILETok;FUNCTIONTok;VARTok;IDTok "q"]
+    (lexString "var return")              |> should equal [VARTok;RETURNTok]
     (lexString "&& || + - *")             |> should equal [ANDTok;ORTok;PLUSTok;MINUSTok;TIMESTok]
     (lexString "/ < > <= >=")             |> should equal [DIVTok;LTTok;GTTok;LEQTok;GEQTok]
     (lexString "= == =")                  |> should equal [EQTok;DOUBLEEQTok;EQTok]
