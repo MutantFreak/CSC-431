@@ -53,3 +53,28 @@ let DoubleTest () =
     (parseString "32.22 ;533.3 ; ") |> should equal (BeginExp [DoubleExp 32.22;DoubleExp 533.3])
 
 
+// Testing "10+55;"
+[<Fact>]
+let test1 () =
+    (parseString "10+55;") |> should equal (BeginExp [PrimExp (PlusP, [IntExp 10; IntExp 55])])
+    
+// Testing "10+4*5;"
+[<Fact>]
+let test2 () =
+    (parseString "10+4*5;") |> should equal (BeginExp [PrimExp (PlusP, [IntExp 10; PrimExp (TimesP, [IntExp 4; IntExp 5])])] )
+
+// Testing "var x = 3;"
+[<Fact>]
+let test3 () =
+    (parseString "var x = 3;") |> should equal (BeginExp [LetExp ("x", IntExp 3, BeginExp [])] )
+
+// Testing "if(true){3;}"
+[<Fact>]
+let test4 () =
+    (parseString "if(true){3;}") |> should equal (BeginExp [IfExp (BoolExp true, BeginExp [IntExp 3], BeginExp [])] )
+
+
+
+
+
+
