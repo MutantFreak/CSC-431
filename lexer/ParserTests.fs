@@ -90,9 +90,21 @@ let test7 () =
     (parseString "var x = \"wordword\"; int?(x);") |> should equal (BeginExp [LetExp ("x", StringExp "wordword", BeginExp [PrimExp (IsIntP, [ID "x"])])] )
 
 
+// Testing "function y ( ){  6  ;}"
+[<Fact>]
+let test8 () =
+    (parseString "function y ( ){  6  ;}") |> should equal (BeginExp [LetrecExp ([("y", [], BeginExp [IntExp 6])], BeginExp [])] )
+       
 
+    
+// Testing "var x = 3 + 4 / ! c . abc * 6 == 5 + 6 + 7 && true || false;"
+[<Fact>]
+let test9 () =
+    (parseString "var x = 3 + 4 / ! c . abc * 6 == 5 + 6 + 7 && true || false;") |> should equal (BeginExp [LetExp ("x", PrimExp (EqP, [PrimExp (PlusP, [IntExp 3; PrimExp (TimesP, [PrimExp (DivP, [IntExp 4; PrimExp (NotP, [FieldRefExp (ID "c", "abc")])]); IntExp 6])]); PrimExp (OrP, [PrimExp (AndP, [PrimExp (PlusP, [PrimExp (PlusP, [IntExp 5; IntExp 6]); IntExp 7]); BoolExp true]); BoolExp false])]), BeginExp [])] )
 
-
+    
+    
+    
 
 
 

@@ -26,25 +26,36 @@ printf "======TESTING======\n"
 
 
 try
-  printf "AST=: %A\n" (parseString "var x = \"wordword\"; var y = 34;")
+  printf "AST=: %A\n" (parseString "function x ( ){  6  ;}")
 with
   | _ -> printf "crashed with 1\n"
 
 try
-  printf "AST=: %A\n" (parseString "var x = 5; int?(x);")
+  printf "AST=: %A\n" (parseString "function x ( ){  6  ;}function y ( ){  6  ;}")
 with
   | _ -> printf "crashed with 2\n"
   
 try
-  printf "AST=: %A\n" (parseString "var x = 5.3; int?(x);")
+  printf "AST=: %A\n" (parseString "function x ( ){  6  ;} var x = y();")
 with
   | _ -> printf "crashed with 3\n"
   
 try
-  printf "AST=: %A\n" (parseString "var x = \"wordword\"; int?(x);")
+  printf "AST=: %A\n" (parseString "function x ( ){  6  ;}function y ( ){  6  ;} var x = y();")
 with
   | _ -> printf "crashed with 4\n"
 
+try
+  printf "Tokens=: %A\n" (lexString "var x = -1;")
+  printf "AST=: %A\n" (parseString "var x = -1;")
+with
+  | _ -> printf "crashed with 5\n"
+
+try
+  printf "AST=: %A\n" (parseString "")
+with
+  | _ -> printf "crashed with 5\n"
+  
 try
   printf "AST=: %A\n" (parseString "")
 with
