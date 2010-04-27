@@ -53,6 +53,16 @@ rule parsetokens = parse
                                                       | "var" -> VARTok
                                                       | "return" -> RETURNTok
                                                       | "print" -> PRINTTok
+                                                      | "instanceof" -> INSTANCEOFTok
+                                                      | "int?" -> ISINTTok
+                                                      | "bool?" -> ISBOOLTok
+                                                      | "double?" -> ISDOUBLETok
+                                                      | "void?" -> ISVOIDTok
+                                                      | "string?" -> ISSTRINGTok
+                                                      | "closure?" -> ISCLOSURETok
+                                                      | "array?" -> ISARRAYTok
+                                                      | "object?" -> ISOBJECTTok
+                                                      | "readLine" -> READLINETok
                                                       | _ -> IDTok (temp)
                                                 }
 
