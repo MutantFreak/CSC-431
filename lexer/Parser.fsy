@@ -25,7 +25,11 @@ open AST
 %token IFTok ELSETok WHILETok
 %token <string> STRINGTok
 %token NEWTok FUNCTIONTok VARTok
-%token RETURNTok PRINTTok
+%token RETURNTok PRINTTok READLINETok
+%token ISINTTok ISBOOLTok ISDOUBLETok ISVOIDTok ISSTRINGTok ISCLOSURETok ISARRAYTok ISOBJECTTok
+%token INSTANCEOFTok
+%token NEWARRAYTok VIEWARRAYTok ARRAYREFTok ARRAYSETTok ARRAYMAXTok
+
 
 // This is the type of the data produced by a successful reduction of the 'start'
 // symbol:
@@ -75,8 +79,8 @@ Params:
   |                                             { [] }
 
 Param:
-  | IDTok COMMATok                                { $1 }
-  | IDTok                                         { $1 }
+  | IDTok COMMATok                              { $1 }
+  | IDTok                                       { $1 }
 
 
 Level1:
@@ -87,37 +91,37 @@ Level1:
     | DOUBLETok                             { (DoubleExp $1) }
     | IDTok                                 { (ID $1) }
     | STRINGTok                             { (StringExp $1) }
-    | LPARENTok Expr LPARENTok              { ($2) }
+    | LPARENTok Expr RPARENTok              { ($2) }
 
 Level2:
     | BANGTok Level2                        { PrimExp (NotP, [$2]) }
     | Level1                                { $1 }
 
 Level3:
-    | Level3 TIMESTok Level2              { PrimExp (TimesP, [$1; $3]) }
-    | Level3 DIVTok Level2                { PrimExp (DivP, [$1; $3]) }
-    | Level2                              { $1 }
+    | Level3 TIMESTok Level2                { PrimExp (TimesP, [$1; $3]) }
+    | Level3 DIVTok Level2                  { PrimExp (DivP, [$1; $3]) }
+    | Level2                                { $1 }
 
 Level4:
-    | Level4 PLUSTok Level3               { PrimExp (PlusP, [$1; $3]) }
-    | Level4 MINUSTok Level3              { PrimExp (MinusP, [$1; $3]) }
-    | Level3                              { $1 }
+    | Level4 PLUSTok Level3                 { PrimExp (PlusP, [$1; $3]) }
+    | Level4 MINUSTok Level3                { PrimExp (MinusP, [$1; $3]) }
+    | Level3                                { $1 }
 
 Level5:
-    | Level5 GTTok Level4                 { PrimExp (GTP, [$1; $3]) }
-    | Level5 LTTok Level4                 { PrimExp (LTP, [$1; $3]) }
-    | Level5 GEQTok Level4                { PrimExp (GEqP, [$1; $3]) }
-    | Level5 LEQTok Level4                { PrimExp (LEqP, [$1; $3]) }
-    | Level4                              { $1 }
+    | Level5 GTTok Level4                   { PrimExp (GTP, [$1; $3]) }
+    | Level5 LTTok Level4                   { PrimExp (LTP, [$1; $3]) }
+    | Level5 GEQTok Level4                  { PrimExp (GEqP, [$1; $3]) }
+    | Level5 LEQTok Level4                  { PrimExp (LEqP, [$1; $3]) }
+    | Level4                                { $1 }
 
 Level6:
-    | Level6 ANDTok Level5                { PrimExp (AndP, [$1; $3]) }
-    | Level6 ORTok Level5                 { PrimExp (OrP, [$1; $3]) }
-    | Level5                              { $1 }
+    | Level6 ANDTok Level5                  { PrimExp (AndP, [$1; $3]) }
+    | Level6 ORTok Level5                   { PrimExp (OrP, [$1; $3]) }
+    | Level5                                { $1 }
 
 Level7:
-    | Level7 DOUBLEEQTok Level6           { PrimExp (EqP, [$1; $3]) }
-    | Level6                              { $1 }
+    | Level7 DOUBLEEQTok Level6             { PrimExp (EqP, [$1; $3]) }
+    | Level6                                { $1 }
 
 
 // Listed below are which parts of the assignment are done, and which are not.
