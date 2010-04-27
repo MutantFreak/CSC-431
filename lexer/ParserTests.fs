@@ -72,6 +72,24 @@ let test3 () =
 [<Fact>]
 let test4 () =
     (parseString "if(true){3;}") |> should equal (BeginExp [IfExp (BoolExp true, BeginExp [IntExp 3], BeginExp [])] )
+    
+// Testing "!x.y;"
+[<Fact>]
+let test5 () =
+    (parseString "!x.y;") |> should equal (BeginExp [PrimExp (NotP, [FieldRefExp (ID "x", "y")])] )
+    
+// Testing "while(x == 4){return x+1;}"
+[<Fact>]
+let test6 () =
+    (parseString "while(x == 4){return x+1;}") |> should equal (BeginExp [WhileExp (PrimExp (EqP, [ID "x"; IntExp 4]), BeginExp [ReturnExp (PrimExp (PlusP, [ID "x"; IntExp 1]))])] )
+
+
+// Testing "var x = \"wordword\"; int?(x);"
+[<Fact>]
+let test7 () =
+    (parseString "var x = \"wordword\"; int?(x);") |> should equal (BeginExp [LetExp ("x", StringExp "wordword", BeginExp [PrimExp (IsIntP, [ID "x"])])] )
+
+
 
 
 
