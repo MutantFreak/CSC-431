@@ -52,6 +52,7 @@ rule parsetokens = parse
                                                       | "function" -> FUNCTIONTok
                                                       | "var" -> VARTok
                                                       | "return" -> RETURNTok
+                                                      | "print" -> PRINTTok
                                                       | _ -> IDTok (temp)
                                                 }
 

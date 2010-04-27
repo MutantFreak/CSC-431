@@ -25,7 +25,7 @@ open AST
 %token IFTok ELSETok WHILETok
 %token <string> STRINGTok
 %token NEWTok FUNCTIONTok VARTok
-%token RETURNTok
+%token RETURNTok PRINTTok
 
 // This is the type of the data produced by a successful reduction of the 'start'
 // symbol:
@@ -45,24 +45,24 @@ Prog:
   
 StmtSeq:
 // An expression followed by a semicolon.
-  | Expr SEMICOLONTok StmtSeq                                                                        { $1 :: $3 }
+  | Expr SEMICOLONTok StmtSeq                                                                              { $1 :: $3 }
 // if 
-  | IFTok LPARENTok Expr RPARENTok LCURLYTok StmtSeq RCURLYTok StmtSeq                                  { IfExp ($3, BeginExp ($6), BeginExp ([]) ) :: $8}
+  | IFTok LPARENTok Expr RPARENTok LCURLYTok StmtSeq RCURLYTok StmtSeq                                     { IfExp ($3, BeginExp ($6), BeginExp ([]) ) :: $8}
 // if & else
   | IFTok LPARENTok Expr RPARENTok LCURLYTok StmtSeq RCURLYTok ELSETok LCURLYTok StmtSeq RCURLYTok StmtSeq { IfExp ($3, BeginExp ($6), BeginExp ($10) ) :: $12 }
 // while loops with body
-  | WHILETok LPARENTok Expr RPARENTok LCURLYTok StmtSeq RCURLYTok StmtSeq                               { WhileExp ($3, BeginExp ($6) ) :: $8 }
+  | WHILETok LPARENTok Expr RPARENTok LCURLYTok StmtSeq RCURLYTok StmtSeq                                  { WhileExp ($3, BeginExp ($6) ) :: $8 }
 // var declaration
-  | VARTok IDTok EQTok Expr SEMICOLONTok StmtSeq                                                     { [LetExp ($2, $4, BeginExp ($6))] }
+  | VARTok IDTok EQTok Expr SEMICOLONTok StmtSeq                                                           { [LetExp ($2, $4, BeginExp ($6))] }
 // var assignment
-  | IDTok EQTok Expr SEMICOLONTok StmtSeq                                                            { SetExp ($1, $3) :: $5 }
+  | IDTok EQTok Expr SEMICOLONTok StmtSeq                                                                  { SetExp ($1, $3) :: $5 }
 // return expressions
-  | RETURNTok Expr SEMICOLONTok StmtSeq                                                              { ReturnExp ($2) :: $4 }
+  | RETURNTok Expr SEMICOLONTok StmtSeq                                                                    { ReturnExp ($2) :: $4 }
 // field setting eg: x.y = 3
-  | Expr DOTTok IDTok EQTok Expr StmtSeq                                                             { FieldSetExp ($1, $3, $5) :: $6 }
+  | Expr DOTTok IDTok EQTok Expr StmtSeq                                                                   { FieldSetExp ($1, $3, $5) :: $6 }
 // Function declarations, with parameters
-  | FUNCTIONTok IDTok LPARENTok Params RPARENTok LCURLYTok StmtSeq RCURLYTok StmtSeq                    { [LetrecExp ([($2, $4, BeginExp ($7))], BeginExp($9))] }
-  |                                                                                               { [] }
+  | FUNCTIONTok IDTok LPARENTok Params RPARENTok LCURLYTok StmtSeq RCURLYTok StmtSeq                       { [LetrecExp ([($2, $4, BeginExp ($7))], BeginExp($9))] }
+  |                                                                                                        { [] }
 
 // Expr is level7
 Expr:
@@ -130,7 +130,7 @@ Level7:
 //  | if ( ‹expr› ) { ‹stmt›* }                    done
 //  | if ( ‹expr› ) { ‹stmt›* } else { ‹stmt›* }   done
 //  | while ( ‹expr› ) { ‹stmt›* }                 done
-//  | function ‹id› ( ‹paramlist› ) { ‹stmt›* }
+//  | function ‹id› ( ‹paramlist› ) { ‹stmt›* }    done
 
 //‹expr› ::= ‹int›                                 done
 //  | ‹float›                                      done
@@ -138,7 +138,7 @@ Level7:
 //  | false                                        done
 //  | ‹id›                                         done
 //  | ‹string›                                     done
-//  | ( ‹expr› )
+//  | ( ‹expr› )                                   done
 //  | ‹id› ( ‹arglist› )
 //  | ( ‹expr› ) ( ‹arglist› )
 //  | ‹expr› ‹binop› ‹expr›                        done
