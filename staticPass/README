@@ -1,0 +1,15 @@
+The commands we have supported are:
+
+make
+make clean
+make test
+make run
+
+"make test" and "make run" run some tests of our own that we built up.
+
+To our knowledge, all required functionality of the lexer is completely implemented.
+We know that there are a number of parts of our parser that remain unimplemented, mostly for a lack of time more than anything else. We are currently up against an issue with function declarations (LetRecExp), where our parser produces the correct AST if functions are declared on their own, or with statements that are not another function declaration immediately following them. When two functions immediately follow one another, rather than putting the two funbindings into a list together like our parser should, it creates a first LetRecExp, and says that the expression (scope) that it is valid in is the second LetRecExp.
+
+Also, we tried to add support for negative numbers, but ran into problems when we were trying to create an IntExp out of a negative number like this:
+{ (IntExp -$1) }
+for our rule: | MINUSTok INTTok

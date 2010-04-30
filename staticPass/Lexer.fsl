@@ -1,0 +1,103 @@
+{
+(***
+   All code between the two curly braces will be spit directly into
+   the generated code file.
+***)
+
+module Lexer
+
+open System
+
+open Parser
+
+// These two modules define goo needed to use fslex
+open Microsoft.FSharp.Text.Lexing
+
+
+(*let inc_lnum bol pos =
+  let lnum = pos.pos_lnum in
+  {pos with pos_lnum =  lnum+1; pos_bol = bol }
+ 
+let newline lexbuf =
+  lexbuf_set_curr_p lexbuf
+    ( inc_lnum (lexeme_end lexbuf) (lexeme_end_p lexbuf))
+ *)
+
+let getLexemeString (lexbuf : LexBuffer<_>) = System.Text.Encoding.ASCII.GetString lexbuf.Lexeme
+}
+ 
+// Base regular expressions
+let digit = ['0'-'9']
+let whitespace = [' ' '\t' ]
+let newline = ('\n' | '\r' '\n')
+let alpha = (['a'-'z'] | ['A'-'Z'])
+ 
+rule parsetokens = parse
+// ----------------------------
+| whitespace      { parsetokens lexbuf }
+| newline         { parsetokens lexbuf }
+// ----------------------------
+| digit+  { INTTok (Int32.Parse (getLexemeString lexbuf)) }
+| digit+('.'digit+)?(['e''E']digit+)?   { DOUBLETok (Double.Parse(getLexemeString lexbuf)) }
+// ----------------------------
+| alpha( alpha | digit | '_' | '?' )*           {
+                                                  let temp = (getLexemeString lexbuf)
+                                                  match temp with
+                                                      | "true" -> TRUETok
+                                                      | "false" -> FALSETok
+                                                      | "new" -> NEWTok
+                                                      | "if" -> IFTok
+                                                      | "else" -> ELSETok
+                                                      | "while" -> WHILETok
+                                                      | "function" -> FUNCTIONTok
+                                                      | "var" -> VARTok
+                                                      | "return" -> RETURNTok
+                                                      | "print" -> PRINTTok
+                                                      | "instanceof" -> INSTANCEOFTok
+                                                      | "int?" -> ISINTTok
+                                                      | "bool?" -> ISBOOLTok
+                                                      | "double?" -> ISDOUBLETok
+                                                      | "void?" -> ISVOIDTok
+                                                      | "string?" -> ISSTRINGTok
+                                                      | "closure?" -> ISCLOSURETok
+                                                      | "array?" -> ISARRAYTok
+                                                      | "object?" -> ISOBJECTTok
+                                                      | "readLine" -> READLINETok
+                                                      | _ -> IDTok (temp)
+                                                }
+
+// before creating a STRING with that string as its field.
+| '"'(_*)'"'       {
+                      let temp = (getLexemeString lexbuf)
+                      let newTemp = temp.Substring (1, (String.length (temp) - 2) )
+                      STRINGTok (newTemp)
+                   }
+
+// ----------------------------
+| "&&"   { ANDTok }
+| "||"   { ORTok }
+| "+"    { PLUSTok }
+| "-"    { MINUSTok }
+| "*"    { TIMESTok }
+| "/"    { DIVTok }
+| "<"    { LTTok }
+| ">"    { GTTok }
+| "<="   { LEQTok }
+| ">="   { GEQTok }
+| "="    { EQTok }
+| ";"    { SEMICOLONTok }
+// OUR CODE
+| "^"    { CARETTok }
+| "=="   { DOUBLEEQTok }
+| "("    { LPARENTok }
+| ")"    { RPARENTok }
+| "{"    { LCURLYTok }
+| "}"    { RCURLYTok }
+| "!"    { BANGTok }
+| "."    { DOTTok }
+| ","    { COMMATok }
+// ----------------------------
+| eof             { EOFTok }
+
+
+
