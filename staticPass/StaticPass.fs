@@ -1,9 +1,15 @@
+module StaticPass
+
 open AST
 
 exception variableDoesNotExist of string
 
-type staticEnv = frame list
-type frame = (Map <string, int>, int ref)
+//type frame = (Map<string, int>, int ref)
+//type staticEnv = frame list
+
+type sframe = (Map<string,int> * int ref)
+type senv = (sframe * sframe list)
+
 
 (*** TODO: Learn how to make a new empty frame / staticEnv so we can call walk with it.
 // the empty frameList
@@ -15,7 +21,8 @@ let evalMT = eval emptyEnv
 //call with new frame (<string, int>
 ***)
 
-let buildNewFrame = (Map.ofList [], ref 0)
+let x = ref 0
+let buildNewFrame = (Map.ofList[], ref 0)
 
 (* Recursive function that takes in an AST, and computes and prints out frame # and offset for each variable. *)
 let rec walk ourTree (frameList( (thisFrame(theMap, count) )::rest)) = 
@@ -23,10 +30,10 @@ let rec walk ourTree (frameList( (thisFrame(theMap, count) )::rest)) =
         | ID (id:string) -> let (frameNum, offset) = checkFrameList frameList id
                             printf "Found id %A at frame: %A, offset %A\n" id frameNum offset
                             ()
-        | BoolExp (val:bool) -> ()
-        | IntExp (val:int) -> ()
-        | DoubleExp (val:double) -> ()
-        | StringExp (val:string) -> ()
+        | BoolExp (value:bool) -> ()
+        | IntExp (value:int) -> ()
+        | DoubleExp (value:double) -> ()
+        | StringExp (value:string) -> ()
         | PrimExp (thePrim:prim, expList:exp list) -> for eachExp in expList do
                                                       walk eachExp frameList
                                                       ()
