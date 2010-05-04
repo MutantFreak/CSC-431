@@ -5,7 +5,7 @@ open AST
 //open AST2
 
 exception VariableDoesNotExist of string
-
+exception RuntimeError of string
 //type frame = (Map<string, int>, int ref)
 //type staticEnv = frame list
 
@@ -83,4 +83,27 @@ let rec walk ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList) as o
         | NewExp (closureExp:exp, argsExpList:exp list) -> ()
         | AppExp (closureExp:exp, argExps:exp list) -> walk closureExp ourSenv
                                                        ()
+
+
+
+// This function takes in a list of exp
+let rec flattenHelper answer theHead = 
+   match (theHead) with 
+       | [] -> answer
+       // if this is the last element in the list of exp's and it is empty, then preserve it
+       | theHead::restOfList -> match (theHead) with
+                                    | BeginExp(gutsList) -> if (restOfList = [] && gutsList = [])
+                                                            then (flattenHelper (Array.append answer [theHead]) restOfList)
+                                                            else
+                                                            flattenHelper answer (gutsList)::restOfList
+                                    | _ -> answer::theHead
+                                           flattenHelper answer restOfList
+
+// This function takes in an BeginExp
+let flattenBegins (express:exp) =
+   match (express) with
+       //find the first beginExp, & call flattenHelper on it's guts
+       | BeginExp(gutsList) -> (flattenHelper [] gutsList)
+       | _ -> raise (RuntimeError("First Exp is not BeginExp"))
+       
 
