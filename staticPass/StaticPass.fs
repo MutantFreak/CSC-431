@@ -93,17 +93,17 @@ let rec flattenHelper answer theHead =
        // if this is the last element in the list of exp's and it is empty, then preserve it
        | theHead::restOfList -> match (theHead) with
                                     | BeginExp(gutsList) -> if (restOfList = [] && gutsList = [])
-                                                            then (flattenHelper (Array.append answer [theHead]) restOfList)
+                                                            then (flattenHelper (List.append answer [theHead]) restOfList)
                                                             else
-                                                            flattenHelper answer (gutsList)::restOfList
-                                    | _ -> answer::theHead
-                                           flattenHelper answer restOfList
+                                                            flattenHelper answer (List.append gutsList restOfList)
+                                    | _ -> let newAnswer = (List.append answer [theHead])
+                                           flattenHelper newAnswer restOfList
 
 // This function takes in an BeginExp
 let flattenBegins (express:exp) =
    match (express) with
        //find the first beginExp, & call flattenHelper on it's guts
-       | BeginExp(gutsList) -> (flattenHelper [] gutsList)
+       | BeginExp(gutsList) -> BeginExp(flattenHelper [] gutsList)
        | _ -> raise (RuntimeError("First Exp is not BeginExp"))
        
 
