@@ -38,13 +38,21 @@ let rec checkFrameList ( (((frontFrameMap:Map<string,int>), count) as frontFrame
 (* Recursive function that takes in an AST, and computes and prints out frame # and offset for each variable. *)
 let rec walk ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList) as ourSenv) = 
     match ourTree with
+          // TODO: Create an AST2.ID of the name, with the two offsets necessary.
         | ID (id:string) -> let (frameNum, offset) = checkFrameList ourSenv id 0
                             printf "Found id %A at frame: %A, offset %A\n" id frameNum offset
                             ()
+          // TODO: Create an AST2.BoolExp (unchanged)
         | BoolExp (value:bool) -> ()
+          // TODO: Create an AST2.IntExp (unchanged)
         | IntExp (value:int) -> ()
+          // TODO: Search the doubleTable to find where this double is. If it exists, use that offset, if not create it in the tabale and use that offset. 
+          //       Create a AST2.DoubleExp made of an int offset into the doubleTable where this double can be found.
         | DoubleExp (value:double) -> ()
+          // TODO: Search the stringTable to find where this string is. If it exists, use that offset, if not create it in the tabale and use that offset. 
+          //       Create a AST2.StringExp made of an int offset into the stringTable where this string can be found.
         | StringExp (value:string) -> ()
+          // TODO: Create a new AST2.PrimExp
         | PrimExp (thePrim:prim, expList:exp list) -> for eachExp in expList do
                                                       walk eachExp ourSenv
                                                       ()
