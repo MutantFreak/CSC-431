@@ -46,16 +46,17 @@ let rec walk ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList) as o
         | BoolExp (value:bool) -> ()
           // TODO: Create an AST2.IntExp (unchanged)
         | IntExp (value:int) -> ()
-          // TODO: Search the doubleTable to find where this double is. If it exists, use that offset, if not create it in the tabale and use that offset. 
+          // TODO: Search the doubleTable to find where this double is. If it exists, use that offset, if not (maybe throw a error) create it in the table and use that offset. 
           //       Create a AST2.DoubleExp made of an int offset into the doubleTable where this double can be found.
         | DoubleExp (value:double) -> ()
-          // TODO: Search the stringTable to find where this string is. If it exists, use that offset, if not create it in the tabale and use that offset. 
+          // TODO: Search the stringTable to find where this string is. If it exists, use that offset, if not (maybe throw a error) create it in the table and use that offset. 
           //       Create a AST2.StringExp made of an int offset into the stringTable where this string can be found.
         | StringExp (value:string) -> ()
-          // TODO: Create a new AST2.PrimExp
+          // TODO: Create a new AST2.PrimExp out of the original AST.prim, and a list of the results of walking each exp in the exp list.
         | PrimExp (thePrim:prim, expList:exp list) -> for eachExp in expList do
                                                       walk eachExp ourSenv
                                                       ()
+          // TODO: Create a new AST2.IfExp out of the results of walking the three exp's given.
         | IfExp (guardExp:exp, thenExp:exp, elseExp:exp) -> walk guardExp ourSenv
                                                             walk thenExp ourSenv
                                                             walk elseExp ourSenv
@@ -66,32 +67,48 @@ let rec walk ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList) as o
                                                   walk bodyExp (buildNewFrame, (frontFrame :: frameList))
                                                   ()
           // Variable Assignment. Extend the frame's map increase the ref to how many variables have been seen in this frame
+          // TODO: Replace LetExp with a BeginExp where the first statement is a SetExp for that variable.
         | LetExp (varName:string, valueExp:exp, inExp:exp) -> walk valueExp ourSenv
                                                               count := (!count) + 1
                                                               let newFrame = (frontFrameMap.Add (varName, (!count)))
                                                               walk inExp ((newFrame, count), frameList)
                                                               ()
-        | LetrecExp (funList:funbinding list, validInExp:exp) -> walk validInExp (buildNewFrame, (frontFrame :: frameList))
 // for each of the function bindings, add it to the map, and bump the count
 //for each of the function bindings, walk over its body and tranfrorm it using a new & extended frame
 //after processing each function binding, put it into the function table.
+// Something tricky will need to go on here.
+        | LetrecExp (funList:funbinding list, validInExp:exp) -> walk validInExp (buildNewFrame, (frontFrame :: frameList))
                                                                  ()
+          // TODO: Create a new AST2.ReturnExp out of the result from walking the given exp
         | ReturnExp (validInExp:exp) -> let newFrameList = walk validInExp ourSenv
                                         ()
         | SetExp (id:string, newValExp:exp) -> let (frameNum, offset) = checkFrameList ourSenv id 0
                                                printf "Found id %A at frame: %A, offset %A\n" id frameNum offset
                                                let newFrameList = walk newValExp ourSenv
                                                ()
+          // TODO: Create a new AST2.BeginExp out out of a list of the results from walking each exp in the given exp list
         | BeginExp (expList: exp list) -> for eachExp in expList do
                                           let newFrameList = walk eachExp ourSenv
                                           ()
+          // TODO: Lookup the given fieldName in the fieldNameTable - if it exists, remember it, if it doesn't, create one.
+          //       Create a new AST2.FieldRefExp out of the result of walking the given exp, coupled with the offset we found.
         | FieldRefExp (objectExp:exp, fieldName:string) -> ()
+          // TODO: Lookup the given fieldName in the fieldNameTable - if it exists, remember it, if it doesn't, create one.
+          //       Create a new AST2.FieldSetExp out of the result of walking the given exp, coupled with the offset we found, and the result of walking the other given exp.
         | FieldSetExp (objectExp:exp, fieldName:string, newValueExp:exp) -> ()
+          // TODO: Lookup the given fieldName in the fieldNameTable - if it exists, remember it, if it doesn't, create one.
+          //       Create a new AST2.MethodCallExp out of the result from walking the closureExp, the offset we found, and the a 
+          //       list of the results found from walking each of the exp's in the given argsExpList
         | MethodCallExp (closureExp:exp, funName:string, argsExpList:exp list) -> ()
+          // TODO: Create a new AST2.NewExp out of the result from walking the closureExp, coupled with a list of the results found 
+          //       from walking each of the exp's in the given argsExpList
+          // I suspect something tricky will need to go on here.
         | NewExp (closureExp:exp, argsExpList:exp list) -> ()
+          // TODO: Create a new AST2.AppExp out of the result from walking the closureExp, coupled with a list of the results found 
+          //       from walking each of the exp's in the given argsExpList
+          // I suspect something tricky will need to go on here.
         | AppExp (closureExp:exp, argExps:exp list) -> walk closureExp ourSenv
                                                        ()
-
 
 
 // This function takes in a list of exp
