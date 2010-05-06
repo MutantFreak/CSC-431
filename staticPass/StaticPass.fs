@@ -30,6 +30,26 @@ let ourStringTable = ref Map.empty<string,int>
 let ourFunTable = ref Map.empty<AST2.funEntry,int>
 let ourFieldNameTable = ref Map.empty<string,int>
 
+// This function takes in a list of exp
+let rec flattenHelper answer theHead = 
+   match (theHead) with 
+       | [] -> answer
+       // if this is the last element in the list of exp's and it is empty, then preserve it
+       | theHead::restOfList -> match (theHead) with
+                                    | BeginExp(gutsList) -> if (restOfList = [] && gutsList = [])
+                                                            then (flattenHelper (List.append answer [theHead]) restOfList)
+                                                            else
+                                                            flattenHelper answer (List.append gutsList restOfList)
+                                    | _ -> let newAnswer = (List.append answer [theHead])
+                                           flattenHelper newAnswer restOfList
+
+// This function takes in an BeginExp
+let flattenBegins (express:exp) =
+   match (express) with
+       //find the first beginExp, & call flattenHelper on it's guts
+       | BeginExp(gutsList) -> BeginExp(flattenHelper [] gutsList)
+       | _ -> raise (RuntimeError("First Exp is not BeginExp"))
+
 (* Checks to see if the given id is anywhere in the frameList. If the id is present somewhere in the frameList,
    this returns the frame # and the offset within that frame where the id was found. If it is not present in the
    list, this function should raise an exception. *)
@@ -68,6 +88,19 @@ let checkStringTable (value:string) =
     // otherwise it already existed, so return the number we had.
     else ((!ourStringTable).Item(value))
 
+(* This helper function searches through ourStringTable to find the string specified. If this function finds it, it will return
+   the offset it was found at, otherwise it will create an it at a new offset and return that. *)
+let checkFieldNameTable (value:string) =
+    // If the string didn't exist in the table already
+    if ((!ourFieldNameTable).TryFind(value) = None)
+    // Then add it under a new offset, increment the stringCounter, and return the offset we put the value
+    then ourFieldNameTable := (!ourFieldNameTable).Add (value, (!stringCounter))
+         stringCounter := (!stringCounter) + 1
+         (!stringCounter) - 1
+    // otherwise it already existed, so return the number we had.
+    else ((!ourFieldNameTable).Item(value))
+
+
 (* Recursive function that takes in an AST, and computes and prints out frame # and offset for each variable. *)
 let rec transform ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList) as ourSenv) = 
     match ourTree with
@@ -96,7 +129,7 @@ let rec transform ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList)
 
           // Need to create a new empty frame and add to the head of the frameList. Evaluate the bodyExp in context of this new frameList.
           // This is only done for while loops and function applications
-        | WhileExp (guardExp:exp, bodyExp:exp) -> AST2.WhileExp ((transform guardExp ourSenv), ScopeExp(0, [], transform bodyExp ((Map.ofList[], ref 0), (frontFrame :: frameList))))                                                 
+        | WhileExp (guardExp:exp, bodyExp:exp) -> AST2.WhileExp ((transform guardExp ourSenv), AST2.ScopeExp(0, [], transform bodyExp ((Map.ofList[], ref 0), (frontFrame :: frameList))))                                                 
 (***
           // Variable Assignment. Extend the frame's map increase the ref to how many variables have been seen in this frame
           // TODO: Replace LetExp with a BeginExp where the first statement is a SetExp for that variable.
@@ -122,22 +155,26 @@ let rec transform ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList)
                                                printf "Found id %A at frame: %A, offset %A\n" id frameNum offset
                                                let newFrameList = transform newValExp ourSenv
                                                ()
+**)
           // TODO: Before hand, call flattenBegins on the BeginExp that was found, and then use the result in the next step.
           // TODO: Create a new AST2.BeginExp out out of a list of the results from transforming each exp in the given exp list
-        | BeginExp (expList: exp list) -> for eachExp in expList do
-                                          let newFrameList = transform eachExp ourSenv
-                                          ()
+        | BeginExp (expList: exp list) -> let result = ref []
+                                          for eachExp in expList do
+                                            result := (List.append !result [(transform (flattenBegins eachExp) ourSenv)])
+                                          AST2.BeginExp (!result)
+(**
           // TODO: Lookup the given fieldName in the fieldNameTable - if it exists, remember it, if it doesn't, throw an error
           //       Create a new AST2.FieldRefExp out of the result of transforming the given exp, coupled with the offset we found.
         | FieldRefExp (objectExp:exp, fieldName:string) -> ()
           // TODO: Lookup the given fieldName in the fieldNameTable - if it exists, remember it, if it doesn't, create one.
           //       Create a new AST2.FieldSetExp out of the result of transforming the given exp, coupled with the offset we found, and the result of transforming the other given exp.
         | FieldSetExp (objectExp:exp, fieldName:string, newValueExp:exp) -> ()
+**)
           // TODO: Lookup the given fieldName in the fieldNameTable - if it exists, remember it, if it doesn't, create one.
           //       Create a new AST2.MethodCallExp out of the result from transforming the closureExp, the offset we found, and the a 
           //       list of the results found from transforming each of the exp's in the given argsExpList
-        | MethodCallExp (closureExp:exp, funName:string, argsExpList:exp list) -> ()
-**)
+        | MethodCallExp (closureExp:exp, funName:string, argsExpList:exp list) -> let offset = (checkFieldNameTable funName)
+                                                                                  AST2.MethodCallExp ((transform closureExp ourSenv), offset, (transformList argsExpList ourSenv))
           // TODO: Create a new AST2.NewExp out of the result from transforming the closureExp, coupled with a list of the results found 
           //       from transforming each of the exp's in the given argsExpList
           // I suspect something tricky will need to go on here.
@@ -158,24 +195,6 @@ and transformList expList ourSenv =
       result := (List.append !result [(transform eachExp ourSenv)] )
    !result
 
-// This function takes in a list of exp
-let rec flattenHelper answer theHead = 
-   match (theHead) with 
-       | [] -> answer
-       // if this is the last element in the list of exp's and it is empty, then preserve it
-       | theHead::restOfList -> match (theHead) with
-                                    | BeginExp(gutsList) -> if (restOfList = [] && gutsList = [])
-                                                            then (flattenHelper (List.append answer [theHead]) restOfList)
-                                                            else
-                                                            flattenHelper answer (List.append gutsList restOfList)
-                                    | _ -> let newAnswer = (List.append answer [theHead])
-                                           flattenHelper newAnswer restOfList
 
-// This function takes in an BeginExp
-let flattenBegins (express:exp) =
-   match (express) with
-       //find the first beginExp, & call flattenHelper on it's guts
-       | BeginExp(gutsList) -> BeginExp(flattenHelper [] gutsList)
-       | _ -> raise (RuntimeError("First Exp is not BeginExp"))
        
 
