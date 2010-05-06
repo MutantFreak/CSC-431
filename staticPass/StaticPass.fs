@@ -20,6 +20,11 @@ let evalMT = eval emptyEnv
 
 //let buildNewFrame = (Map.ofList[], ref 0)
 
+let doubleCounter = ref 0;
+let stringCounter = ref 0;
+let funCounter = ref 0;
+let fieldNameCounter = ref 0;
+
 let ourDoubleTable = ref Map.empty<double,int>
 let ourStringTable = ref Map.empty<string,int>
 let ourFunTable = ref Map.empty<AST2.funEntry,int>
@@ -39,6 +44,30 @@ let rec checkFrameList ( (((frontFrameMap:Map<string,int>), count) as frontFrame
     else
        (frameNumber, frontFrameMap.Item(id))
 
+(* This helper function searches through ourDoubleTable to find the double specified. If this function finds it, it will return
+   the offset it was found at, otherwise it will create an it at a new offset and return that. *)
+let checkDoubleTable (value:double) =
+    // If the double didn't exist in the table already
+    if ((!ourDoubleTable).TryFind(value) = None)
+    // Then add it under a new offset, increment the doubleCounter, and return the offset we put the value
+    then ourDoubleTable := (!ourDoubleTable).Add (value, (!doubleCounter))
+         doubleCounter := (!doubleCounter) + 1
+         (!doubleCounter) - 1
+    // otherwise it already existed, so return the number we had.
+    else ((!ourDoubleTable).Item(value))
+
+(* This helper function searches through ourStringTable to find the string specified. If this function finds it, it will return
+   the offset it was found at, otherwise it will create an it at a new offset and return that. *)
+let checkStringTable (value:string) =
+    // If the string didn't exist in the table already
+    if ((!ourStringTable).TryFind(value) = None)
+    // Then add it under a new offset, increment the stringCounter, and return the offset we put the value
+    then ourStringTable := (!ourStringTable).Add (value, (!stringCounter))
+         stringCounter := (!stringCounter) + 1
+         (!stringCounter) - 1
+    // otherwise it already existed, so return the number we had.
+    else ((!ourStringTable).Item(value))
+
 (* Recursive function that takes in an AST, and computes and prints out frame # and offset for each variable. *)
 let rec transform ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList) as ourSenv) = 
     match ourTree with
@@ -53,13 +82,15 @@ let rec transform ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList)
           // TODO: Create an AST2.IntExp (unchanged)
         | IntExp (value:int) -> //()
                                 AST2.IntExp (value)
-(**
           // TODO: Search the doubleTable to find where this double is. If it exists, use that offset, if not create it in the table and use that offset. 
           //       Create a AST2.DoubleExp made of an int offset into the doubleTable where this double can be found.
-        | DoubleExp (value:double) -> ()
+        | DoubleExp (value:double) -> //()
+                                      AST2.DoubleExp (checkDoubleTable value)
           // TODO: Search the stringTable to find where this string is. If it exists, use that offset, if not create it in the table and use that offset. 
           //       Create a AST2.StringExp made of an int offset into the stringTable where this string can be found.
-        | StringExp (value:string) -> ()
+        | StringExp (value:string) -> //()
+                                      AST2.StringExp (checkStringTable value)
+(***
           // TODO: Create a new AST2.PrimExp out of the original AST.prim, and a list of the results of transforming each exp in the exp list.
         | PrimExp (thePrim:prim, expList:exp list) -> for eachExp in expList do
                                                       transform eachExp ourSenv
