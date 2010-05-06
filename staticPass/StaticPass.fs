@@ -7,17 +7,6 @@ open AST
 exception VariableDoesNotExist of string
 exception RuntimeError of string
 
-
-(*** TODO: Learn how to make a new empty frame / staticEnv so we can call transform with it.
-// the empty frameList
-let (emptyFrame : env) = Map.ofList[]
-
-// Returns a function that expects an expression. It will evaluate that expression given the empty environment just defined.
-let evalMT = eval emptyEnv
-
-//call with new frame (<string, int>
-***)
-
 //let buildNewFrame = (Map.ofList[], ref 0)
 
 let doubleCounter = ref 0;
@@ -195,13 +184,10 @@ let rec transform ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList)
 ***)
         | _ -> raise (RuntimeError(sprintf "Whoops! You ran a test case which uses an Exp that we didn't implement yet!\n"))
 
-
 and transformList expList ourSenv = 
    let result = ref []
    for eachExp in expList do
       result := (List.append !result [(transform eachExp ourSenv)] )
    !result
-
-
        
 
