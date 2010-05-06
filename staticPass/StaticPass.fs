@@ -73,37 +73,31 @@ let rec transform ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList)
     match ourTree with
           // TODO: Create an AST2.ID of the name, with the two offsets necessary.
         | ID (id:string) -> let (frameNum, offset) = checkFrameList ourSenv id 0
-                            //printf "Found id %A at frame: %A, offset %A\n" id frameNum offset
-                            //()
                             AST2.ID (id, frameNum, offset)
           // TODO: Create an AST2.BoolExp (unchanged)
-        | BoolExp (value:bool) -> //()
-                                  AST2.BoolExp (value)
+        | BoolExp (value:bool) -> AST2.BoolExp (value)
           // TODO: Create an AST2.IntExp (unchanged)
-        | IntExp (value:int) -> //()
-                                AST2.IntExp (value)
+        | IntExp (value:int) -> AST2.IntExp (value)
           // TODO: Search the doubleTable to find where this double is. If it exists, use that offset, if not create it in the table and use that offset. 
           //       Create a AST2.DoubleExp made of an int offset into the doubleTable where this double can be found.
-        | DoubleExp (value:double) -> //()
-                                      AST2.DoubleExp (checkDoubleTable value)
+        | DoubleExp (value:double) -> AST2.DoubleExp (checkDoubleTable value)
           // TODO: Search the stringTable to find where this string is. If it exists, use that offset, if not create it in the table and use that offset. 
           //       Create a AST2.StringExp made of an int offset into the stringTable where this string can be found.
-        | StringExp (value:string) -> //()
-                                      AST2.StringExp (checkStringTable value)
+        | StringExp (value:string) -> AST2.StringExp (checkStringTable value)
 
           // TODO: Create a new AST2.PrimExp out of the original AST.prim, and a list of the results of transforming each exp in the exp list.
         | PrimExp (thePrim:prim, expList:exp list) -> AST2.PrimExp (thePrim, (transformList expList ourSenv))
-(***
+
           // TODO: Create a new AST2.IfExp out of the results of transforming the three exp's given.
-        | IfExp (guardExp:exp, thenExp:exp, elseExp:exp) -> transform guardExp ourSenv
-                                                            transform thenExp ourSenv
-                                                            transform elseExp ourSenv
-                                                            ()
+        | IfExp (guardExp:exp, thenExp:exp, elseExp:exp) -> let newGuard = transform guardExp ourSenv
+                                                            let newThen = transform thenExp ourSenv
+                                                            let newElse = transform elseExp ourSenv
+                                                            AST2.IfExp (newGuard, newThen, newElse)
+
           // Need to create a new empty frame and add to the head of the frameList. Evaluate the bodyExp in context of this new frameList.
           // This is only done for while loops and function applications
-        | WhileExp (guardExp:exp, bodyExp:exp) -> transform guardExp ourSenv
-                                                  transform bodyExp (buildNewFrame, (frontFrame :: frameList))
-                                                  ()
+        | WhileExp (guardExp:exp, bodyExp:exp) -> AST2.WhileExp ((transform guardExp ourSenv), ScopeExp(0, [], transform bodyExp ((Map.ofList[], ref 0), (frontFrame :: frameList))))                                                 
+(***
           // Variable Assignment. Extend the frame's map increase the ref to how many variables have been seen in this frame
           // TODO: Replace LetExp with a BeginExp where the first statement is a SetExp for that variable.
         | LetExp (varName:string, valueExp:exp, inExp:exp) -> transform valueExp ourSenv
@@ -118,9 +112,12 @@ let rec transform ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList)
 // Something tricky will need to go on here.
         | LetrecExp (funList:funbinding list, validInExp:exp) -> transform validInExp (buildNewFrame, (frontFrame :: frameList))
                                                                  ()
+***)
           // TODO: Create a new AST2.ReturnExp out of the result from transforming the given exp
-        | ReturnExp (validInExp:exp) -> let newFrameList = transform validInExp ourSenv
-                                        ()
+        | ReturnExp (validInExp:exp) -> //let newFrameList = transform validInExp ourSenv
+                                        //()
+                                        AST2.ReturnExp (transform validInExp ourSenv)
+(***
         | SetExp (id:string, newValExp:exp) -> let (frameNum, offset) = checkFrameList ourSenv id 0
                                                printf "Found id %A at frame: %A, offset %A\n" id frameNum offset
                                                let newFrameList = transform newValExp ourSenv
