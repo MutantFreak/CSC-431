@@ -18,7 +18,7 @@ let evalMT = eval emptyEnv
 //call with new frame (<string, int>
 ***)
 
-let buildNewFrame = (Map.ofList[], ref 0)
+//let buildNewFrame = (Map.ofList[], ref 0)
 
 let ourDoubleTable = ref Map.empty<double,int>
 let ourStringTable = ref Map.empty<string,int>
@@ -44,12 +44,16 @@ let rec transform ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList)
     match ourTree with
           // TODO: Create an AST2.ID of the name, with the two offsets necessary.
         | ID (id:string) -> let (frameNum, offset) = checkFrameList ourSenv id 0
-                            printf "Found id %A at frame: %A, offset %A\n" id frameNum offset
-                            ()
+                            //printf "Found id %A at frame: %A, offset %A\n" id frameNum offset
+                            //()
+                            AST2.ID (id, frameNum, offset)
           // TODO: Create an AST2.BoolExp (unchanged)
-        | BoolExp (value:bool) -> ()
+        | BoolExp (value:bool) -> //()
+                                  AST2.BoolExp (value)
           // TODO: Create an AST2.IntExp (unchanged)
-        | IntExp (value:int) -> ()
+        | IntExp (value:int) -> //()
+                                AST2.IntExp (value)
+(**
           // TODO: Search the doubleTable to find where this double is. If it exists, use that offset, if not create it in the table and use that offset. 
           //       Create a AST2.DoubleExp made of an int offset into the doubleTable where this double can be found.
         | DoubleExp (value:double) -> ()
@@ -115,6 +119,7 @@ let rec transform ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList)
           // I suspect something tricky will need to go on here.
         | AppExp (closureExp:exp, argExps:exp list) -> transform closureExp ourSenv
                                                        ()
+***)
 
 // This function takes in a list of exp
 let rec flattenHelper answer theHead = 
