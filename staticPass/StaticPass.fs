@@ -90,11 +90,10 @@ let rec transform ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList)
           //       Create a AST2.StringExp made of an int offset into the stringTable where this string can be found.
         | StringExp (value:string) -> //()
                                       AST2.StringExp (checkStringTable value)
-(***
+
           // TODO: Create a new AST2.PrimExp out of the original AST.prim, and a list of the results of transforming each exp in the exp list.
-        | PrimExp (thePrim:prim, expList:exp list) -> for eachExp in expList do
-                                                      transform eachExp ourSenv
-                                                      ()
+        | PrimExp (thePrim:prim, expList:exp list) -> AST2.PrimExp (thePrim, (transformList expList ourSenv))
+(***
           // TODO: Create a new AST2.IfExp out of the results of transforming the three exp's given.
         | IfExp (guardExp:exp, thenExp:exp, elseExp:exp) -> transform guardExp ourSenv
                                                             transform thenExp ourSenv
@@ -141,16 +140,26 @@ let rec transform ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList)
           //       Create a new AST2.MethodCallExp out of the result from transforming the closureExp, the offset we found, and the a 
           //       list of the results found from transforming each of the exp's in the given argsExpList
         | MethodCallExp (closureExp:exp, funName:string, argsExpList:exp list) -> ()
+**)
           // TODO: Create a new AST2.NewExp out of the result from transforming the closureExp, coupled with a list of the results found 
           //       from transforming each of the exp's in the given argsExpList
           // I suspect something tricky will need to go on here.
-        | NewExp (closureExp:exp, argsExpList:exp list) -> ()
+        | NewExp (closureExp:exp, argsExpList:exp list) -> AST2.NewExp ((transform closureExp ourSenv), (transformList argsExpList ourSenv))
+(**
           // TODO: Create a new AST2.AppExp out of the result from transforming the closureExp, coupled with a list of the results found 
           //       from transforming each of the exp's in the given argsExpList
           // I suspect something tricky will need to go on here.
         | AppExp (closureExp:exp, argExps:exp list) -> transform closureExp ourSenv
                                                        ()
 ***)
+        | _ -> raise (RuntimeError(sprintf "unimplemented\n"))
+
+
+and transformList expList ourSenv = 
+   let result = ref []
+   for eachExp in expList do
+      result := (List.append !result [(transform eachExp ourSenv)] )
+   !result
 
 // This function takes in a list of exp
 let rec flattenHelper answer theHead = 
