@@ -100,6 +100,13 @@ let checkFieldNameTable (value:string) =
     // otherwise it already existed, so return the number we had.
     else ((!ourFieldNameTable).Item(value))
 
+let checkFieldNameTableError (value:string) =
+    // If the string didn't exist in the table already
+    if ((!ourFieldNameTable).TryFind(value) = None)
+    // Then throw an error
+    then raise (VariableDoesNotExist(sprintf "%s not found\n" value))
+    // otherwise it already existed, so return the number we had.
+    else ((!ourFieldNameTable).Item(value))
 
 (* Recursive function that takes in an AST, and computes and prints out frame # and offset for each variable. *)
 let rec transform ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList) as ourSenv) = 
@@ -162,11 +169,10 @@ let rec transform ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList)
                                           for eachExp in expList do
                                             result := (List.append !result [(transform (flattenBegins eachExp) ourSenv)])
                                           AST2.BeginExp (!result)
-(**
           // TODO: Lookup the given fieldName in the fieldNameTable - if it exists, remember it, if it doesn't, throw an error
           //       Create a new AST2.FieldRefExp out of the result of transforming the given exp, coupled with the offset we found.
-        | FieldRefExp (objectExp:exp, fieldName:string) -> ()
-***)
+        | FieldRefExp (objectExp:exp, fieldName:string) -> let offset = (checkFieldNameTableError fieldName)
+                                                           AST2.FieldRefExp ((transform objectExp ourSenv), offset)
           // TODO: Lookup the given fieldName in the fieldNameTable - if it exists, remember it, if it doesn't, create one.
           //       Create a new AST2.FieldSetExp out of the result of transforming the given exp, coupled with the offset we found, and the result of transforming the other given exp.
         | FieldSetExp (objectExp:exp, fieldName:string, newValueExp:exp) -> AST2.FieldSetExp ((transform objectExp ourSenv), (checkFieldNameTable fieldName), (transform newValueExp ourSenv))
