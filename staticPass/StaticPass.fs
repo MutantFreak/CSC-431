@@ -6,8 +6,6 @@ open AST
 
 exception VariableDoesNotExist of string
 exception RuntimeError of string
-//type frame = (Map<string, int>, int ref)
-//type staticEnv = frame list
 
 
 (*** TODO: Learn how to make a new empty frame / staticEnv so we can call walk with it.
@@ -30,8 +28,9 @@ let rec checkFrameList ( (((frontFrameMap:Map<string,int>), count) as frontFrame
     if (frontFrameMap.TryFind(id) = None)
          //then try to check the rest of the list, as long as the list isn't empty
     then match frameList with
-             | [] -> raise (VariableDoesNotExist(sprintf "%s not found in any frame!" id))
-             | (top :: rest) -> checkFrameList (top, rest) id (frameNumber+1)
+             | [] -> raise (VariableDoesNotExist(sprintf "%s not found in any frame!\n" id))
+             | (top :: rest) -> printf "Searching in frame # %A for variable %A\n" frameNumber id
+                                checkFrameList (top, rest) id (frameNumber+1)
     else
        (frameNumber, frontFrameMap.Item(id))
 
@@ -69,8 +68,9 @@ let rec walk ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList) as o
           // Variable Assignment. Extend the frame's map increase the ref to how many variables have been seen in this frame
           // TODO: Replace LetExp with a BeginExp where the first statement is a SetExp for that variable.
         | LetExp (varName:string, valueExp:exp, inExp:exp) -> walk valueExp ourSenv
-                                                              count := (!count) + 1
                                                               let newFrame = (frontFrameMap.Add (varName, (!count)))
+                                                              printf "Adding variable %A at offset %A in a new frame\n" varName count
+                                                              count := (!count) + 1
                                                               walk inExp ((newFrame, count), frameList)
                                                               ()
 // for each of the function bindings, add it to the map, and bump the count
@@ -86,6 +86,7 @@ let rec walk ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList) as o
                                                printf "Found id %A at frame: %A, offset %A\n" id frameNum offset
                                                let newFrameList = walk newValExp ourSenv
                                                ()
+          // TODO: Before hand, call flattenBegins on the BeginExp that was found, and then use the result in the next step.
           // TODO: Create a new AST2.BeginExp out out of a list of the results from walking each exp in the given exp list
         | BeginExp (expList: exp list) -> for eachExp in expList do
                                           let newFrameList = walk eachExp ourSenv
@@ -109,7 +110,6 @@ let rec walk ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList) as o
           // I suspect something tricky will need to go on here.
         | AppExp (closureExp:exp, argExps:exp list) -> walk closureExp ourSenv
                                                        ()
-
 
 // This function takes in a list of exp
 let rec flattenHelper answer theHead = 
