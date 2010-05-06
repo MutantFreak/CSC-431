@@ -101,10 +101,10 @@ let rec walk ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList) as o
 printf "-------------------------------------\n\n"
 
 //let testTree = (LetExp ("x", (IntExp 9), BeginExp ([LetExp("y", (IntExp 7), BeginExp ([(ID "y"); (ID "x")])); (ID "x")]) ) )
-//let resultTree = walk testTree (buildNewFrame, [])
+//let resultTree = walk testTree ((Map.ofList[], ref 0), [])
 
 let testTree2 = (LetExp ("x", (IntExp 9), BeginExp ([WhileExp ((BoolExp true), BeginExp ([(ID "x"); WhileExp((BoolExp true), (ID "x"))] ) ); (ID "x")]) ) )
-let resultTree2 = walk testTree2 (buildNewFrame, [])
+let resultTree2 = walk testTree2 ((Map.ofList[], ref 0), [])
 
 //Should result in x being at frame 1 offset 0
 //Should result in x being at frame 2 offset 0
