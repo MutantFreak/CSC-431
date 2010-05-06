@@ -88,15 +88,15 @@ let checkStringTable (value:string) =
     // otherwise it already existed, so return the number we had.
     else ((!ourStringTable).Item(value))
 
-(* This helper function searches through ourStringTable to find the string specified. If this function finds it, it will return
+(* This helper function searches through ourFieldNameTable to find the string specified. If this function finds it, it will return
    the offset it was found at, otherwise it will create an it at a new offset and return that. *)
 let checkFieldNameTable (value:string) =
     // If the string didn't exist in the table already
     if ((!ourFieldNameTable).TryFind(value) = None)
-    // Then add it under a new offset, increment the stringCounter, and return the offset we put the value
-    then ourFieldNameTable := (!ourFieldNameTable).Add (value, (!stringCounter))
-         stringCounter := (!stringCounter) + 1
-         (!stringCounter) - 1
+    // Then add it under a new offset, increment the fieldNameCounter, and return the offset we put the value
+    then ourFieldNameTable := (!ourFieldNameTable).Add (value, (!fieldNameCounter))
+         fieldNameCounter := (!fieldNameCounter) + 1
+         (!fieldNameCounter) - 1
     // otherwise it already existed, so return the number we had.
     else ((!ourFieldNameTable).Item(value))
 
@@ -166,10 +166,11 @@ let rec transform ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList)
           // TODO: Lookup the given fieldName in the fieldNameTable - if it exists, remember it, if it doesn't, throw an error
           //       Create a new AST2.FieldRefExp out of the result of transforming the given exp, coupled with the offset we found.
         | FieldRefExp (objectExp:exp, fieldName:string) -> ()
+***)
           // TODO: Lookup the given fieldName in the fieldNameTable - if it exists, remember it, if it doesn't, create one.
           //       Create a new AST2.FieldSetExp out of the result of transforming the given exp, coupled with the offset we found, and the result of transforming the other given exp.
-        | FieldSetExp (objectExp:exp, fieldName:string, newValueExp:exp) -> ()
-**)
+        | FieldSetExp (objectExp:exp, fieldName:string, newValueExp:exp) -> AST2.FieldSetExp ((transform objectExp ourSenv), (checkFieldNameTable fieldName), (transform newValueExp ourSenv))
+
           // TODO: Lookup the given fieldName in the fieldNameTable - if it exists, remember it, if it doesn't, create one.
           //       Create a new AST2.MethodCallExp out of the result from transforming the closureExp, the offset we found, and the a 
           //       list of the results found from transforming each of the exp's in the given argsExpList
@@ -186,7 +187,7 @@ let rec transform ourTree ( ( ((frontFrameMap, count) as frontFrame), frameList)
         | AppExp (closureExp:exp, argExps:exp list) -> transform closureExp ourSenv
                                                        ()
 ***)
-        | _ -> raise (RuntimeError(sprintf "unimplemented\n"))
+        | _ -> raise (RuntimeError(sprintf "Whoops! You ran a test case which uses an Exp that we didn't implement yet!\n"))
 
 
 and transformList expList ourSenv = 
