@@ -1,0 +1,7 @@
+Our feelings about this project are roughly summed up by the following face:  =S
+We felt like we lacked the time necessary to fully implement all the features we were supposed to implement.
+Our program currently does not support four types of exp's: LetExp, LetRecExp, SetExp, and AppExp.
+
+Our makefile is available to be used. When compiling, you can say "make", "make clean", "make test", or "make run".
+"make test" tests our flattenBegins function and shows that it works.
+"make run" tests our function which walks the AST, and prints out the frame counter and offset within a given frame where a variable is being placed, and again when the variable is referenced.
