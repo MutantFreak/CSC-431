@@ -1,0 +1,45 @@
+type FieldType = 
+     | i1
+     | i64
+     | i64ptr
+     | eFramePtr
+     | eFramePtrPtr
+     | cloPtr
+     | cloPtrPtr
+     | arrayPtr
+     | arrayPtrPtr
+
+type Register = string
+
+type Label = string
+
+type Other = 
+     | Load of (fieldType, RegisterNumber)
+     | Store of (fieldType, RegisterNumber, RegisterNumber)
+     | GetElementPtr of (FieldType, RegisterNumber, FieldType, int, FieldType, int)
+
+type LLVM_Instruction =
+     | Assignment of (RegisterNumber, Other)
+     | Return of (FieldType, RegisterNumber)
+
+------------------------------------------------
+
+type LLVM_Line =
+     | Label
+     | instru that produces a value
+     | instr that doesn't produce a value (br, return, store)
+
+LLVM_Line =
+Label
+RegisterProducer of register * RegProdInstr
+Reg (non producing instructions, i.e. return, br, store, trunc, etc)
+
+type RegProdInstr = 
+     | load of flavor * register
+     | add of register * register
+call of ......
+
+
+footle: 3 + 4
+AST / AST2: PrimExp (PlusP, [Int 3, Int 4])
+            => RegisterProducer (getFreshRegister, ())
