@@ -13,6 +13,16 @@ type Register = string
 
 type Label = string
 
+
+
+//             Above here is final
+//-------------------------------------------
+
+
+
+
+
+
 type Other = 
      | Load of (fieldType, RegisterNumber)
      | Store of (fieldType, RegisterNumber, RegisterNumber)
