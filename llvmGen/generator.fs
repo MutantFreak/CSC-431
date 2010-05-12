@@ -1,4 +1,4 @@
-
+module generator
 (* How to call a C function from LLVM. In C, a 64 bit # is a "long long" or i64_t
 
 delcare i64 @and_prim (i64, i64)
@@ -6,6 +6,9 @@ use a call instruction to call @and_prim
 *)
 
 (* For Milestone 1, we need to be able to handle integers, addition, and subtraction *)
+
+open typedef
+open AST
 
 let registerCounter = ref 1;
 
@@ -16,7 +19,7 @@ let getFreshRegister = let newRegisterName = ("%r" ^ string_of_int(!registerCoun
 
 (* Function that takes in an AST2, and the existing list of LLVM instructions, and returns a new list of LLVM instructions, 
    tupled with a register where the result is stored *)
-let generate ourTree instrList =
+let rec generate ourTree instrList =
     match ourTree with
 (*
         ID of (string * int * int)
@@ -35,8 +38,8 @@ let generate ourTree instrList =
           // want an equivalent of %r1 = add i64 theNum, 0
         | PrimExp (thePrim : AST.prim, argsList : exp list) -> match thePrim with
                                                                    | PlusP -> let finalResultReg = getFreshRegister
-                                                                              let (leftList, leftResultReg) = generate argsList[0] instrList
-                                                                              let (rightList, rightResultReg) = generate argsList[1] instrList
+                                                                              let (leftList, leftResultReg) = (generate (hd argsList) instrList)
+                                                                              let (rightList, rightResultReg) = generate (hd (tl argsList)) instrList
                                                                               let addInstr = LLVM_Line(RegProdLine(finalResultReg, Call(i64, "@add_prim", [(i64, leftResultReg); (i64, rightResultReg)]) ) )
                                                                               (existingInstrList::leftList::rightList::addInstr, finalResultReg)
                                                                    //| MinusP -> 
@@ -76,7 +79,7 @@ let printLLVM instrList =
 let testFunc =
     let declareLine = Declare (i64, "@add_prim")
     let defineLine = Define (i64, "ourFunc", [])
-    let inputAST = 
+    let inputAST = (IntExp 4)
     let results = generate inputAST declareLine::defineLine
     printLLVM results
 

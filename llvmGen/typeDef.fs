@@ -1,13 +1,15 @@
+module typedef
+
 type FieldType = 
-     | i1
-     | i64
-     | i64ptr
-     | eFramePtr
-     | eFramePtrPtr
-     | cloPtr
-     | cloPtrPtr
-     | arrayPtr
-     | arrayPtrPtr
+     | I1
+     | I64
+     | I64ptr
+     | EFramePtr
+     | EFramePtrPtr
+     | CloPtr
+     | CloPtrPtr
+     | ArrayPtr
+     | ArrayPtrPtr
 
 // Anywhere you can use a register, you can also use a number
 type LLVM_Arg =
