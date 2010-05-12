@@ -10,7 +10,7 @@ use a call instruction to call @and_prim
 let registerCounter = ref 1;
 
 // Function to produce a fresh register name
-let getFreshRegister = let newRegisterName = ("%We_Love_Compilers_" ^ string_of_int(!registerCounter))
+let getFreshRegister = let newRegisterName = ("%r" ^ string_of_int(!registerCounter))
                        registerCounter := !registerCounter + 1
                        newRegisterName
 
@@ -58,12 +58,14 @@ let generate ourTree instrList =
 
 (* Function that eakes a single LLVM instruction, and prints its string representation. *)
 let printLLVMHelper singleInstr = 
-    let ref buildingString = ""
+    "We don't print things yet."
+(*    let ref buildingString = ""
     match singleInstr with
         | RegProdLine (resultRegister, producingInstr) -> buildingString := resultregister ^ (get the string value of the producingInstr from a helper function)
         | NonRegProdLine (nonProducingInstr) -> buildingString = (get the string value of the nonProducingInstr from a helper function)
     // return the string that we built so it can be printed out by printLLVM
     !buildingString
+*)
 
 (* Function that takes in an LLVM instruction list, and prints the result of printLLVMHelper being called on each instruction. *)
 let printLLVM instrList =
@@ -72,7 +74,9 @@ let printLLVM instrList =
 
 (* Testing function that generates the llvm instruction list, and prints it out. *)
 let testFunc =
-    //let defineLine = 
+    let declareLine = Declare (i64, "@add_prim")
+    let defineLine = Define (i64, "ourFunc", [])
     let inputAST = 
-    let results = generate inputAST []
+    let results = generate inputAST declareLine::defineLine
     printLLVM results
+
