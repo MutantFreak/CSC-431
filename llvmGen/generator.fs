@@ -10,7 +10,7 @@ use a call instruction to call @and_prim
 let registerCounter = ref 1;
 
 // Function to produce a fresh register name
-let getFreshRegister = let newRegisterName = ("%r" ^ string_of_int(!registerCounter))
+let getFreshRegister = let newRegisterName = ("%We_Love_Compilers_" ^ string_of_int(!registerCounter))
                        registerCounter := !registerCounter + 1
                        newRegisterName
 
@@ -24,10 +24,9 @@ let generate ourTree instrList =
 *)
           // Generate an LLVM instruction that stores theNum into a fresh register
         | IntExp (theNum : int) -> let newReg = getFreshRegister
-                                   let newInstr = LLVM_Line(RegProdLine(newReg, Add(i64, theNum, i64, 0)))
-                                   // Append newInstr to the end of instrList
-                                   let newList = List.Append instrList [|newInstr|]
-                                   (newList, newReg)
+                                   let newNum = theNum * 4
+                                   let newInstr = LLVM_Line(RegProdLine(newReg, Add(i64, newNum, i64, 0)))
+                                   ([newInstr], newReg)
 (*
         | DoubleExp of int
         | StringExp of int 
@@ -35,12 +34,12 @@ let generate ourTree instrList =
           // Shift theNum by 2 bits (multiply by 4) to make space for the tag, then add in a small number for the tag (i.e. 1 for the tag bits 01, or 2 for the tag bits 10)
           // want an equivalent of %r1 = add i64 theNum, 0
         | PrimExp (thePrim : AST.prim, argsList : exp list) -> match thePrim with
-                                                                   | PlusP -> let (letList, leftResultReg) = generate argsList[0]
-                                                                              let (rightList, rightResultReg) = generate argsList[1]
-                                                                              let addInstr = LLVM_Line(RegProdLine(getFreshRegister, Add(FieldType * LLVM_Arg * FieldType * LLVM_Arg)))
-                                                                              //Put the left existingInstrList::leftList::rightList::addInstr::
-
-                                                                   | MinusP -> 
+                                                                   | PlusP -> let finalResultReg = getFreshRegister
+                                                                              let (leftList, leftResultReg) = generate argsList[0] instrList
+                                                                              let (rightList, rightResultReg) = generate argsList[1] instrList
+                                                                              let addInstr = LLVM_Line(RegProdLine(finalResultReg, Call(i64, "@add_prim", [(i64, leftResultReg); (i64, rightResultReg)]) ) )
+                                                                              (existingInstrList::leftList::rightList::addInstr, finalResultReg)
+                                                                   //| MinusP -> 
 (*
         | IfExp of (exp * exp * exp)
         | WhileExp of (exp * exp) /
@@ -73,7 +72,7 @@ let printLLVM instrList =
 
 (* Testing function that generates the llvm instruction list, and prints it out. *)
 let testFunc =
-    let defineLine = 
+    //let defineLine = 
     let inputAST = 
-    let results = generate inputAST [defineLine]
+    let results = generate inputAST []
     printLLVM results
