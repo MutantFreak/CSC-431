@@ -1,4 +1,4 @@
-module generator
+module Generator
 (* How to call a C function from LLVM. In C, a 64 bit # is a "long long" or i64_t
 
 delcare i64 @and_prim (i64, i64)
@@ -7,13 +7,15 @@ use a call instruction to call @and_prim
 
 (* For Milestone 1, we need to be able to handle integers, addition, and subtraction *)
 
-open typedef
-open AST
+open AST2
+open TypeDef
+
+let q = string_of_int 4
 
 let registerCounter = ref 1;
 
 // Function to produce a fresh register name
-let getFreshRegister = let newRegisterName = ("%r" ^ string_of_int(!registerCounter))
+let getFreshRegister = let newRegisterName = ("%r" + string_of_int (!registerCounter))
                        registerCounter := !registerCounter + 1
                        newRegisterName
 
@@ -37,12 +39,12 @@ let rec generate ourTree instrList =
           // Shift theNum by 2 bits (multiply by 4) to make space for the tag, then add in a small number for the tag (i.e. 1 for the tag bits 01, or 2 for the tag bits 10)
           // want an equivalent of %r1 = add i64 theNum, 0
         | PrimExp (thePrim : AST.prim, argsList : exp list) -> match thePrim with
-                                                                   | PlusP -> let finalResultReg = getFreshRegister
-                                                                              let (leftList, leftResultReg) = (generate (hd argsList) instrList)
-                                                                              let (rightList, rightResultReg) = generate (hd (tl argsList)) instrList
-                                                                              let addInstr = LLVM_Line(RegProdLine(finalResultReg, Call(i64, "@add_prim", [(i64, leftResultReg); (i64, rightResultReg)]) ) )
-                                                                              (existingInstrList::leftList::rightList::addInstr, finalResultReg)
-                                                                   //| MinusP -> 
+                                                                   | AST.PlusP -> let finalResultReg = getFreshRegister
+                                                                                  let (leftList, leftResultReg) = (generate (List.head argsList) instrList)
+                                                                                  let (rightList, rightResultReg) = generate (List.head (List.tail argsList)) instrList
+                                                                                  let addInstr = LLVM_Line(RegProdLine(finalResultReg, Call(I64, "@add_prim", [(I64, leftResultReg); (I64, rightResultReg)]) ) )
+                                                                                  (List.append leftList (List.append rightList [addInstr]), finalResultReg)
+                                                                   //| AST.MinusP -> 
 (*
         | IfExp of (exp * exp * exp)
         | WhileExp of (exp * exp) /
@@ -57,6 +59,7 @@ let rec generate ourTree instrList =
         | CloExp of (string * int) 
         | ScopeExp of (int * string list * exp)
 *)
+        | _ -> printf "Found an expression that is not supported: %A" ourTree
 
 
 (* Function that eakes a single LLVM instruction, and prints its string representation. *)
@@ -77,9 +80,9 @@ let printLLVM instrList =
 
 (* Testing function that generates the llvm instruction list, and prints it out. *)
 let testFunc =
-    let declareLine = Declare (i64, "@add_prim")
-    let defineLine = Define (i64, "ourFunc", [])
+    let declareLine = Declare (I64, LLVM_Arg(GlobalLabel("@add_prim")))
+    let defineLine = Define (I64, LLVM_Arg(GlobalLabel("ourFunc")), [])
     let inputAST = (IntExp 4)
-    let results = generate inputAST declareLine::defineLine
-    printLLVM results
+    let (resultList, resultRegister) = generate inputAST (declareLine::[defineLine])
+    printLLVM declareLine::defineLine::resultList
 

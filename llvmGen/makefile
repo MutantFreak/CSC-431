@@ -1,6 +1,6 @@
 all : ParserTests.exe
 
-LLVMGENSOURCE = AST.fs AST2.fs generator.fs typeDef.fs
+LLVMGENSOURCE = AST.fs AST2.fs typeDef.fs generator.fs 
 
 FSCFLAGS = #-I:bin/
 FSC = ~jcswenso/fsc
