@@ -16,13 +16,10 @@ type LLVM_Arg =
      | Register of string
      | Number of int
        // A global label is something like @stuff
-//     | GlobalLabel of string
+     | GlobalLabel of string   
 
-type GlobalLabel = string
-
-                          // could be a Register or a number
 type Param = (FieldType * string)
-
+                        // could be a Register or a number
 type Arg = (FieldType * LLVM_Arg)
 
 type LLVM_Line =
@@ -43,7 +40,7 @@ and  RegProdInstr =
      | Load of (Flavor * LLVM_Arg * LLVM_Arg)
      | Add of (FieldType * LLVM_Arg * FieldType * LLVM_Arg)
        // Format is "call i64 (...)* @add_prim(i64 5, i64 2)"
-     | Call of (FieldType * GlobalLabel * Arg list)
+     | Call of (FieldType * string * Arg list)
 
 and  NonRegProdInstr = 
      | Return of (FieldType * LLVM_Arg)

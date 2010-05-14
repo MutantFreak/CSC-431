@@ -10,12 +10,10 @@ use a call instruction to call @and_prim
 open AST2
 open TypeDef
 
-let q = string_of_int 4
-
 let registerCounter = ref 1;
 
 // Function to produce a fresh register name
-let getFreshRegister = let newRegisterName = ("%r" + string_of_int (!registerCounter))
+let getFreshRegister = let newRegisterName = ("%r" + (string !registerCounter))
                        registerCounter := !registerCounter + 1
                        newRegisterName
 
@@ -30,7 +28,7 @@ let rec generate ourTree instrList =
           // Generate an LLVM instruction that stores theNum into a fresh register
         | IntExp (theNum : int) -> let newReg = getFreshRegister
                                    let newNum = theNum * 4
-                                   let newInstr = LLVM_Line(RegProdLine(newReg, Add(i64, newNum, i64, 0)))
+                                   let newInstr = RegProdLine(Register(newReg), Add(I64, Number(newNum), I64, Number(0)))
                                    ([newInstr], newReg)
 (*
         | DoubleExp of int
@@ -42,9 +40,10 @@ let rec generate ourTree instrList =
                                                                    | AST.PlusP -> let finalResultReg = getFreshRegister
                                                                                   let (leftList, leftResultReg) = (generate (List.head argsList) instrList)
                                                                                   let (rightList, rightResultReg) = generate (List.head (List.tail argsList)) instrList
-                                                                                  let addInstr = LLVM_Line(RegProdLine(finalResultReg, Call(I64, "@add_prim", [(I64, leftResultReg); (I64, rightResultReg)]) ) )
+                                                                                  let addInstr = RegProdLine(Register(finalResultReg), Call(I64, "@add_prim", [(I64, Register(leftResultReg)); (I64, Register(rightResultReg))]) )
                                                                                   (List.append leftList (List.append rightList [addInstr]), finalResultReg)
                                                                    //| AST.MinusP -> 
+                                                                    | _ -> printf "Found an invalid prim: %A\n" thePrim
 (*
         | IfExp of (exp * exp * exp)
         | WhileExp of (exp * exp) /
@@ -59,12 +58,11 @@ let rec generate ourTree instrList =
         | CloExp of (string * int) 
         | ScopeExp of (int * string list * exp)
 *)
-        | _ -> printf "Found an expression that is not supported: %A" ourTree
-
+        | _ -> printf "Found an expression that is not supported: %A\n" ourTree
 
 (* Function that eakes a single LLVM instruction, and prints its string representation. *)
 let printLLVMHelper singleInstr = 
-    "We don't print things yet."
+    "We don't print things yet.\n"
 (*    let ref buildingString = ""
     match singleInstr with
         | RegProdLine (resultRegister, producingInstr) -> buildingString := resultregister ^ (get the string value of the producingInstr from a helper function)
