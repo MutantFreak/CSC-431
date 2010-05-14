@@ -1,26 +1,12 @@
-all : ParserTests.exe
+all : llvmGen.dll
 
-LLVMGENSOURCE = AST.fs AST2.fs typeDef.fs generator.fs 
+FSCFLAGS = -I:~FSharpPowerPack-1.9.9.9/bin/
+FSC = mono ~/FSharp/bin/fsc.exe
+FSLEX = mono ~/FSharpPowerPack-1.9.9.9/bin/fslex.exe
+FSYACC = mono ~/FSharpPowerPack-1.9.9.9/bin/fsyacc.exe
 
-FSCFLAGS = #-I:bin/
-FSC = ~jcswenso/fsc
-FSLEX = mono ~clements/FSharpPowerPack-1.9.9.9/bin/fslex.exe
-FSYACC = mono ~clements/FSharpPowerPack-1.9.9.9/bin/fsyacc.exe -v
-CONSOLETESTER = xunit.console.exe
-
-
-
-ParserTests.exe : ${LLVMGENSOURCE}
-	${FSC} ${FSCFLAGS} LLVMGENSOURCE
-	
-Run.exe : Parser.dll Run.fs
-	${FSC} ${FSCFLAGS} -r:Parser.dll Run.fs
-
-run : Run.exe
-	mono Run.exe
-	
-test : ParserTests.exe
-	mono ${CONSOLETESTER} ParserTests.exe
-
-clean : 
-	rm Lexer.fs Run.exe ParserTests.exe RealParser.fs RealParser.fsi Parser.fsi Parser.fs Parser.dll
+llvmGen.dll : parser.dll StaticPass.fs generator.fs AST.fs AST2.fs
+	~jcswenso/fsc -a -o parser.dll -r:../lib/FSharp.PowerPack.dll -r:parser.dll AST2.fs StaticPass.fs generator.fs
+          
+Run.exe : llvmGen.dll Run.exe
+	${FSC} ${FSCFLAGS} -r:FParsec.dll tests.fs sexpParser.fs AST.fs ParseAST.fs AST2.fs StaticPass.fs
