@@ -10,6 +10,8 @@ use a call instruction to call @and_prim
 open AST2
 open TypeDef
 
+exception RuntimeError of string
+
 let registerCounter = ref 1;
 
 // Function to produce a fresh register name
@@ -43,7 +45,7 @@ let rec generate ourTree instrList =
                                                                                   let addInstr = RegProdLine(Register(finalResultReg), Call(I64, "@add_prim", [(I64, Register(leftResultReg)); (I64, Register(rightResultReg))]) )
                                                                                   (List.append leftList (List.append rightList [addInstr]), finalResultReg)
                                                                    //| AST.MinusP -> 
-                                                                    | _ -> printf "Found an invalid prim: %A\n" thePrim
+                                                                    | _ -> raise (RuntimeError (sprintf "Found an invalid prim: %A\n" thePrim))
 (*
         | IfExp of (exp * exp * exp)
         | WhileExp of (exp * exp) /
@@ -58,7 +60,7 @@ let rec generate ourTree instrList =
         | CloExp of (string * int) 
         | ScopeExp of (int * string list * exp)
 *)
-        | _ -> printf "Found an expression that is not supported: %A\n" ourTree
+        | _ -> raise (RuntimeError (sprintf "Found an expression that is not supported: %A\n" ourTree))
 
 (* Function that eakes a single LLVM instruction, and prints its string representation. *)
 let printLLVMHelper singleInstr = 
@@ -78,8 +80,8 @@ let printLLVM instrList =
 
 (* Testing function that generates the llvm instruction list, and prints it out. *)
 let testFunc =
-    let declareLine = Declare (I64, LLVM_Arg(GlobalLabel("@add_prim")))
-    let defineLine = Define (I64, LLVM_Arg(GlobalLabel("ourFunc")), [])
+    let declareLine = Declare (I64, "@add_prim")
+    let defineLine = Define (I64, "ourFunc", [])
     let inputAST = (IntExp 4)
     let (resultList, resultRegister) = generate inputAST (declareLine::[defineLine])
     printLLVM declareLine::defineLine::resultList
