@@ -10,3 +10,6 @@ llvmGen.dll : parser.dll StaticPass.fs typeDef.fs generator.fs AST.fs AST2.fs
           
 Run.exe : llvmGen.dll Run.fs
 	~jcswenso/fsc -o Run.exe -r:parser.dll typeDef.fs AST.fs AST2.fs StaticPass.fs generator.fs Run.fs
+	
+run : Run.exe
+	mono Run.exe
