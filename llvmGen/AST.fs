@@ -21,7 +21,7 @@ type exp =
     | AppExp of (exp * exp list)
     with override self.ToString () = (sprintf "%A" self)
 
-and funbinding = string * string list * exp
+and funbinding = string * string list * exp //Name of the function, its arguments, and its body exp.
 
 and prim =
     AndP | OrP | NotP
@@ -34,4 +34,3 @@ and prim =
     | PrintP | ReadLineP
     | NewArrayP | ArrayRefP | ArraySetP | ArrayMaxP
     with override self.ToString () = (sprintf "%A" self)
-
