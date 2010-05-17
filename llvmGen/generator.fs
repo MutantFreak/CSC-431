@@ -7,6 +7,8 @@ use a call instruction to call @and_prim
 
 (* For Milestone 1, we need to be able to handle integers, addition, and subtraction *)
 
+// for scopeExp's, keep track of what register the current parent eframe is stored in.
+
 open AST2
 open TypeDef
 
@@ -63,7 +65,7 @@ let rec generate ourTree instrList =
         | _ -> raise (RuntimeError (sprintf "Found an expression that is not supported: %A\n" ourTree))
 
 (* Function that eakes a single LLVM instruction, and prints its string representation. *)
-let printLLVMHelper singleInstr = 
+let printLLVMLine singleInstr = 
     "We don't print things yet.\n"
 (*    let ref buildingString = ""
     match singleInstr with
@@ -76,7 +78,7 @@ let printLLVMHelper singleInstr =
 (* Function that takes in an LLVM instruction list, and prints the result of printLLVMHelper being called on each instruction. *)
 let printLLVM instrList =
     for eachInstr in instrList do
-    printf "%A\n " (printLLVMHelper eachInstr)
+    printf "%A\n " (printLLVMLine eachInstr)
 
 (* Testing function that generates the llvm instruction list, and prints it out. *)
 let testFunc =
@@ -84,5 +86,5 @@ let testFunc =
     let defineLine = Define (I64, "ourFunc", [])
     let inputAST = (IntExp 4)
     let (resultList, resultRegister) = generate inputAST (declareLine::[defineLine])
-    printLLVM declareLine::defineLine::resultList
+    printLLVM (declareLine::(defineLine::resultList))
 
