@@ -80,11 +80,3 @@ let printLLVM instrList =
     for eachInstr in instrList do
     printf "%A\n " (printLLVMLine eachInstr)
 
-(* Testing function that generates the llvm instruction list, and prints it out. *)
-let testFunc =
-    let declareLine = Declare (I64, "@add_prim")
-    let defineLine = Define (I64, "ourFunc", [])
-    let inputAST = (IntExp 4)
-    let (resultList, resultRegister) = generate inputAST (declareLine::[defineLine])
-    printLLVM (declareLine::(defineLine::resultList))
-
