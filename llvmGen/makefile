@@ -13,3 +13,6 @@ Run.exe : llvmGen.dll Run.fs
 	
 run : Run.exe
 	mono Run.exe
+
+clean :
+   rm StaticPassTest.exe Run.exe

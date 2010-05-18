@@ -5,7 +5,8 @@ delcare i64 @and_prim (i64, i64)
 use a call instruction to call @and_prim
 *)
 
-(* For Milestone 1, we need to be able to handle integers, addition, and subtraction *)
+(* For Milestone 1, we need to be able to handle integers, addition, and subtraction. *)
+(* For Milestone 2, we need to be able to handle everything except objects and arrays. Namely we need to work on while loops & functions. *)
 
 // for scopeExp's, keep track of what register the current parent eframe is stored in.
 
@@ -64,19 +65,47 @@ let rec generate ourTree instrList =
 *)
         | _ -> raise (RuntimeError (sprintf "Found an expression that is not supported: %A\n" ourTree))
 
-(* Function that eakes a single LLVM instruction, and prints its string representation. *)
-let printLLVMLine singleInstr = 
-    "We don't print things yet.\n"
-(*    let ref buildingString = ""
-    match singleInstr with
-        | RegProdLine (resultRegister, producingInstr) -> buildingString := resultregister ^ (get the string value of the producingInstr from a helper function)
-        | NonRegProdLine (nonProducingInstr) -> buildingString = (get the string value of the nonProducingInstr from a helper function)
-    // return the string that we built so it can be printed out by printLLVM
-    !buildingString
-*)
+(* Function that takes a FieldType and returns its string representation. *)
+let printFieldType theField = 
+    match theField with
+        | I1 -> "i1"
+        | I64 -> "i64"
+        | I64ptr -> "i64*"
+        | EFramePtr -> "%eframe*"
+        | EFramePtrPtr -> "%eframe**"
+        | CloPtr -> "%closure*"
+        | CloPtrPtr -> "%closure**"
+        | ArrayPtr -> "Array is not supported yet."
+        | ArrayPtrPtr -> "Array is not supported yet."
 
-(* Function that takes in an LLVM instruction list, and prints the result of printLLVMHelper being called on each instruction. *)
+(* Function that takes an LLVM_Arg and returns its string representation. *)
+let printLLVM_Arg theArg = 
+    match theArg with
+        | Register (name : string) -> name
+          //TODO: Ask clements about when to do the divide by 4 for shifting right again.
+        | Number (theNum : int) -> string (theNum/4)
+        | GlobalLabel (theLabel : string) -> theLabel
+
+(* Function that takes a register producing instruction, and returns its string representation. *)
+let printRegProdInstr instr =
+    match instr with
+        | Load (getElementPtrFlavor : Flavor, getElementPtrField : LLVM_Arg, getElementPtrResultRegister : LLVM_Arg) -> "Load is not yet supported."
+        | Add (arg1Type : FieldType, arg1: LLVM_Arg, arg2Type : FieldType, arg2 : LLVM_Arg) -> "add " + (printFieldType arg1Type) + " " + (printLLVM_Arg arg1) + " " + (printFieldType arg2Type) + " " + (printLLVM_Arg arg2)
+          // Format is "call i64 (...)* @add_prim(i64 5, i64 2)"
+        | Call (theType : FieldType, name : string, argsList : Arg list) -> "Call is not yet supported."
+
+(* Function that takes a single LLVM instruction, and returns its string representation. *)
+let printLLVMLine singleInstr = 
+    match singleInstr with
+        | Label (name : string) -> name
+          //return the name of the register + " = " + the producing instruction
+        | RegProdLine (resultRegister : LLVM_Arg, producingInstr : RegProdInstr) -> (printLLVM_Arg resultRegister) + " = " + (printRegProdInstr producingInstr)
+        | NonRegProdLine (nonProducingInstr) -> "Non register producing instructions are not yet supported."
+        | Declare (theType: FieldType, name : string) -> "Declare is not yet supported."(*"declare " + (printFieldtype theType) + " " + name*)
+        | Define (theType : FieldType, name : string, paramsList: Param list) -> "Define is not yet supported."
+
+(* Function that takes in an LLVM instruction list, and prints the string representation of each instruction. *)
 let printLLVM instrList =
     for eachInstr in instrList do
-    printf "%A\n " (printLLVMLine eachInstr)
+    printf "%O\n" (printLLVMLine eachInstr)
 

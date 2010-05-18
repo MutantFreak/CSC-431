@@ -16,7 +16,7 @@ type LLVM_Arg =
      | Register of string
      | Number of int
        // A global label is something like @stuff
-     | GlobalLabel of string   
+     | GlobalLabel of string
 
 type Param = (FieldType * string)
                         // could be a Register or a number
@@ -48,7 +48,7 @@ and  NonRegProdInstr =
 //     | GetElementPtr of (FieldType * LLVM_Arg * FieldType * int * FieldType * int)
      | Store of (FieldType * LLVM_Arg * LLVM_Arg)
 
-// These are all the different types of getelementptr's
+// These are all the different types of getelementptr's. Each of them has implicit field types + numbers.
 and  Flavor = 
      | EframeParent
      | EFrameCount

@@ -25,7 +25,7 @@ type exp =
 // Name of the function, names of args, body, whether or not this function refers to the this pointer.
 //things that refer to the this pointer can only be used as methods
 type funEntry = string * string list * exp * bool
- 
+
 type doubleTable = Map<double,int>
 type stringTable = Map<string,int>
 type funTable = Map<funEntry,int>
