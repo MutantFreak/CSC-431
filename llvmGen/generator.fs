@@ -18,9 +18,11 @@ exception RuntimeError of string
 let registerCounter = ref 1;
 
 // Function to produce a fresh register name
-let getFreshRegister = let newRegisterName = ("%r" + (string !registerCounter))
-                       registerCounter := !registerCounter + 1
-                       newRegisterName
+let getFreshRegister () = 
+    printf "in getFreshRegister\n"
+    let newRegisterName = ("%r" + (string !registerCounter))
+    registerCounter := !registerCounter + 1
+    newRegisterName
 
 (* Function that takes in an AST2, and the existing list of LLVM instructions, and returns a new list of LLVM instructions, 
    tupled with a register where the result is stored *)
@@ -31,7 +33,7 @@ let rec generate ourTree instrList =
         | BoolExp of bool
 *)
           // Generate an LLVM instruction that stores theNum into a fresh register
-        | IntExp (theNum : int) -> let newReg = getFreshRegister
+        | IntExp (theNum : int) -> let newReg = getFreshRegister()
                                    let newNum = theNum * 4
                                    let newInstr = RegProdLine(Register(newReg), Add(I64, Number(newNum), I64, Number(0)))
                                    ([newInstr], newReg)
@@ -42,12 +44,16 @@ let rec generate ourTree instrList =
           // Shift theNum by 2 bits (multiply by 4) to make space for the tag, then add in a small number for the tag (i.e. 1 for the tag bits 01, or 2 for the tag bits 10)
           // want an equivalent of %r1 = add i64 theNum, 0
         | PrimExp (thePrim : AST.prim, argsList : exp list) -> match thePrim with
-                                                                   | AST.PlusP -> let finalResultReg = getFreshRegister
+                                                                   | AST.PlusP -> let finalResultReg = getFreshRegister()
                                                                                   let (leftList, leftResultReg) = generate (List.head argsList) instrList
                                                                                   let (rightList, rightResultReg) = generate (List.head (List.tail argsList)) instrList
                                                                                   let addInstr = RegProdLine(Register(finalResultReg), Call(I64, "@add_prim", [(I64, Register(leftResultReg)); (I64, Register(rightResultReg))]) )
                                                                                   (List.append leftList (List.append rightList [addInstr]), finalResultReg)
-                                                                   //| AST.MinusP -> 
+                                                                   | AST.MinusP -> let finalResultReg = getFreshRegister()
+                                                                                   let (leftList, leftResultReg) = generate (List.head argsList) instrList
+                                                                                   let (rightList, rightResultReg) = generate (List.head (List.tail argsList)) instrList
+                                                                                   let subInstr = RegProdLine(Register(finalResultReg), Call(I64, "@sub_prim", [(I64, Register(leftResultReg)); (I64, Register(rightResultReg))]) )
+                                                                                   (List.append leftList (List.append rightList [subInstr]), finalResultReg)
                                                                     | _ -> raise (RuntimeError (sprintf "Found an invalid prim: %A\n" thePrim))
 (*
         | IfExp of (exp * exp * exp)
@@ -67,16 +73,7 @@ let rec generate ourTree instrList =
 
 (* Function that takes a FieldType and returns its string representation. *)
 let printFieldType theField = 
-    match theField with
-        | I1 -> "i1"
-        | I64 -> "i64"
-        | I64ptr -> "i64*"
-        | EFramePtr -> "%eframe*"
-        | EFramePtrPtr -> "%eframe**"
-        | CloPtr -> "%closure*"
-        | CloPtrPtr -> "%closure**"
-        | ArrayPtr -> "Array is not supported yet."
-        | ArrayPtrPtr -> "Array is not supported yet."
+    ""
 
 (* Function that takes an LLVM_Arg and returns its string representation. *)
 let printLLVM_Arg theArg = 
@@ -86,15 +83,9 @@ let printLLVM_Arg theArg =
         | Number (theNum : int) -> string (theNum/4)
         | GlobalLabel (theLabel : string) -> theLabel
 
-(* Function to print out an args list. first says whether or not this is the first argument, used to decide whether or not to put a comma in. *)
-let printArgsList (first:bool) (arg::rest) =
-    match arg with
-    [] -> ""
-                                                //If this is the first argument in the list, do not precede it with a comma
-    (theType : FieldType, theArg : LLVM_Arg) -> if (first = true)
-                                                then (printFieldType theType) + " " + (printLLVM_Arg theArg) + (printArgsList false rest)
-                                                else ", " + (printFieldType theType) + " " + (printLLVM_Arg theArg) + (printArgsList false rest)
 
+let printArgsList theArgs = 
+    ""
 
 (* Function that takes a register producing instruction, and returns its string representation. *)
 let printRegProdInstr instr =
@@ -111,8 +102,8 @@ let printLLVMLine singleInstr =
           //return the name of the register + " = " + the producing instruction
         | RegProdLine (resultRegister : LLVM_Arg, producingInstr : RegProdInstr) -> (printLLVM_Arg resultRegister) + " = " + (printRegProdInstr producingInstr)
         | NonRegProdLine (nonProducingInstr) -> "Non register producing instructions are not yet supported."
-        | Declare (theType: FieldType, name : string) -> "Declare is not yet supported."(*"declare " + (printFieldtype theType) + " " + name*)
-        | Define (theType : FieldType, name : string, paramsList: Param list) -> "Define is not yet supported."
+        | Declare (theType: FieldType, name : string) -> "declare " + (printFieldType theType) + " " + name
+        | Define (theType : FieldType, name : string, paramsList: Param list) -> "define " + (printFieldType theType) + " " + name + " " + (sprintf "%O" paramsList )
 
 (* Function that takes in an LLVM instruction list, and prints the string representation of each instruction. *)
 let printLLVM instrList =
