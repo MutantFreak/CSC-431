@@ -73,7 +73,16 @@ let rec generate ourTree instrList =
 
 (* Function that takes a FieldType and returns its string representation. *)
 let printFieldType theField = 
-    ""
+    match theField with
+        | I1 -> "i1"
+        | I64 -> "i64"
+        | I64ptr -> "i64*"
+        | EFramePtr -> "%eframe*"
+        | EFramePtrPtr -> "%eframe**"
+        | CloPtr -> "%closure*"
+        | CloPtrPtr -> "%closure**"
+        | ArrayPtr -> "ArrayPtr not yet supported."
+        | ArrayPtrPtr -> "ArrayPtrPtr not yet supported."
 
 (* Function that takes an LLVM_Arg and returns its string representation. *)
 let printLLVM_Arg theArg = 
@@ -83,9 +92,15 @@ let printLLVM_Arg theArg =
         | Number (theNum : int) -> string (theNum/4)
         | GlobalLabel (theLabel : string) -> theLabel
 
-
-let printArgsList theArgs = 
-    ""
+(* Function to print out an args list. first says whether or not this is the first argument, used to decide whether or not to put a comma in. *)
+let rec printArgsList (first:bool) argList =
+    match argList with
+        | [] -> ""
+                                                //If this is the first argument in the list, do not precede it with a comma
+          //TODO: Ask about the syntax for this line
+        | (theType : FieldType, theArg : LLVM_Arg)::rest -> if (first = true)
+                                                            then (printFieldType theType) + " " + (printLLVM_Arg theArg) + (printArgsList false rest)
+                                                            else ", " + (printFieldType theType) + " " + (printLLVM_Arg theArg) + (printArgsList false rest)
 
 (* Function that takes a register producing instruction, and returns its string representation. *)
 let printRegProdInstr instr =
@@ -93,7 +108,7 @@ let printRegProdInstr instr =
         | Load (getElementPtrFlavor : Flavor, getElementPtrField : LLVM_Arg, getElementPtrResultRegister : LLVM_Arg) -> "Load is not yet supported."
         | Add (arg1Type : FieldType, arg1: LLVM_Arg, arg2Type : FieldType, arg2 : LLVM_Arg) -> "add " + (printFieldType arg1Type) + " " + (printLLVM_Arg arg1) + ", " + (printFieldType arg2Type) + " " + (printLLVM_Arg arg2)
           // Format is "call i64 (...)* @add_prim(i64 5, i64 2)"
-        | Call (theType : FieldType, name : string, argsList : Arg list) -> "call " + (printFieldType theType) + " " + name + " (" + (printArgsList argsList) + ")"
+        | Call (theType : FieldType, name : string, argsList : Arg list) -> "call " + (printFieldType theType) + " " + name + " (" + (printArgsList true argsList) + ")"
 
 (* Function that takes a single LLVM instruction, and returns its string representation. *)
 let printLLVMLine singleInstr = 
