@@ -43,7 +43,7 @@ let rec generate ourTree instrList =
           // want an equivalent of %r1 = add i64 theNum, 0
         | PrimExp (thePrim : AST.prim, argsList : exp list) -> match thePrim with
                                                                    | AST.PlusP -> let finalResultReg = getFreshRegister
-                                                                                  let (leftList, leftResultReg) = (generate (List.head argsList) instrList)
+                                                                                  let (leftList, leftResultReg) = generate (List.head argsList) instrList
                                                                                   let (rightList, rightResultReg) = generate (List.head (List.tail argsList)) instrList
                                                                                   let addInstr = RegProdLine(Register(finalResultReg), Call(I64, "@add_prim", [(I64, Register(leftResultReg)); (I64, Register(rightResultReg))]) )
                                                                                   (List.append leftList (List.append rightList [addInstr]), finalResultReg)
@@ -90,7 +90,7 @@ let printLLVM_Arg theArg =
 let printRegProdInstr instr =
     match instr with
         | Load (getElementPtrFlavor : Flavor, getElementPtrField : LLVM_Arg, getElementPtrResultRegister : LLVM_Arg) -> "Load is not yet supported."
-        | Add (arg1Type : FieldType, arg1: LLVM_Arg, arg2Type : FieldType, arg2 : LLVM_Arg) -> "add " + (printFieldType arg1Type) + " " + (printLLVM_Arg arg1) + " " + (printFieldType arg2Type) + " " + (printLLVM_Arg arg2)
+        | Add (arg1Type : FieldType, arg1: LLVM_Arg, arg2Type : FieldType, arg2 : LLVM_Arg) -> "add " + (printFieldType arg1Type) + " " + (printLLVM_Arg arg1) + ", " + (printFieldType arg2Type) + " " + (printLLVM_Arg arg2)
           // Format is "call i64 (...)* @add_prim(i64 5, i64 2)"
         | Call (theType : FieldType, name : string, argsList : Arg list) -> "Call is not yet supported."
 
