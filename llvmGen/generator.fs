@@ -33,10 +33,13 @@ let rec generate ourTree instrList =
           // Generate an LLVM instruction that stores an i1 with 1 for true, 0 for false, into a fresh register.
         | BoolExp (value : bool) -> let newReg = getFreshRegister()
                                     if (value = true)
-                                         // Using the number 4 because it's the number 1, but shifted twice
-                                    then let newInstr = RegProdLine(Register(newReg), Add(I64, Number(4), I1, Number(0)))
+                                         (* Using the number 14 because it's the number 1, but shifted three times (100), added 4 to 
+                                            signify it's a boolean, and added 2 to signify it's a boolean or void. Result is 1110 *)
+                                    then let newInstr = RegProdLine(Register(newReg), Add(I64, Number(14), I1, Number(0)))
                                          ([newInstr], newReg)
-                                    else let newInstr = RegProdLine(Register(newReg), Add(I64, Number(0), I1, Number(0)))
+                                         (* Using the number 6 to signify 0110. Last 2 digits (10) signify it's a boolean or void, and
+                                            the extra 1 signifies it is a bool, and the first 0 means it's false. *)
+                                    else let newInstr = RegProdLine(Register(newReg), Add(I64, Number(6), I1, Number(0)))
                                          ([newInstr], newReg)
           // Generate an LLVM instruction that stores theNum into a fresh register
         | IntExp (theNum : int) -> let newReg = getFreshRegister()
@@ -45,7 +48,7 @@ let rec generate ourTree instrList =
                                    ([newInstr], newReg)
 (*
         | DoubleExp of int
-        | StringExp of int 
+        | StringExp of int
 *)
           // Shift theNum by 2 bits (multiply by 4) to make space for the tag, then add in a small number for the tag (i.e. 1 for the tag bits 01, or 2 for the tag bits 10)
           // want an equivalent of %r1 = add i64 theNum, 0
@@ -70,10 +73,10 @@ let rec generate ourTree instrList =
                                                                                  let (rightList, rightResultReg) = generate (List.head (List.tail argsList)) instrList
                                                                                  let divInstr = RegProdLine(Register(finalResultReg), Call(I64, "@div_prim", [(I64, Register(leftResultReg)); (I64, Register(rightResultReg))]) )
                                                                                  (List.append leftList (List.append rightList [divInstr]), finalResultReg)
-                                                                     // TODO: Find out if sqrt should result in a float..?
+                                                                     // TODO: The C function's result should be a double, which we have to store.
                                                                    | AST.SqrtP -> let finalResultReg = getFreshRegister()
                                                                                   let (leftList, leftResultReg) = generate (List.head argsList) instrList
-                                                                                  let sqrtInstr = RegProdLine(Register(finalResultReg), Call(I64, "@add_prim", [(I64, Register(leftResultReg))]) )
+                                                                                 let sqrtInstr = RegProdLine(Register(finalResultReg), Call(I64, "@add_prim", [(I64, Register(leftResultReg))]) )
                                                                                   (List.append leftList (List.append rightList [sqrtInstr]), finalResultReg)
                                                                    | _ -> raise (RuntimeError (sprintf "Found an invalid prim: %A\n" thePrim))
 (*
@@ -81,7 +84,7 @@ let rec generate ourTree instrList =
         | WhileExp of (exp * exp)
         | ReturnExp of exp
         | SetExp of ((string * int * int) * exp)
-        | BeginExp of (exp list)
+        | BeginExp of (expList : exp list)
         | FieldRefExp of (exp * int)
         | FieldSetExp of (exp * int * exp)
         | MethodCallExp of (exp * int * exp list)
@@ -95,6 +98,7 @@ let rec generate ourTree instrList =
 (* Function that takes a FieldType and returns its string representation. *)
 let printFieldType theField = 
     match theField with
+        | F64 -> "f64"
         | I1 -> "i1"
         | I64 -> "i64"
         | I64ptr -> "i64*"

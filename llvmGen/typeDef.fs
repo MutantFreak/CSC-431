@@ -1,6 +1,7 @@
 module TypeDef
 
 type FieldType = 
+     | F64
      | I1
      | I64
      | I64ptr
@@ -19,6 +20,7 @@ type LLVM_Arg =
      | GlobalLabel of string
 
 type Param = (FieldType * string)
+
                         // could be a Register or a number
 type Arg = (FieldType * LLVM_Arg)
 
