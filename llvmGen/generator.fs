@@ -19,7 +19,6 @@ let registerCounter = ref 1;
 
 // Function to produce a fresh register name
 let getFreshRegister () = 
-    printf "in getFreshRegister\n"
     let newRegisterName = ("%r" + (string !registerCounter))
     registerCounter := !registerCounter + 1
     newRegisterName
@@ -79,7 +78,7 @@ let rec generate ourTree instrList =
                                                                    | _ -> raise (RuntimeError (sprintf "Found an invalid prim: %A\n" thePrim))
 (*
         | IfExp of (exp * exp * exp)
-        | WhileExp of (exp * exp) /
+        | WhileExp of (exp * exp)
         | ReturnExp of exp
         | SetExp of ((string * int * int) * exp)
         | BeginExp of (exp list)
