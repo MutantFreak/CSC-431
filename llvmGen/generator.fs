@@ -30,8 +30,15 @@ let rec generate ourTree instrList =
     match ourTree with
 (*
         ID of (string * int * int)
-        | BoolExp of bool
 *)
+          // Generate an LLVM instruction that stores an i1 with 1 for true, 0 for false, into a fresh register.
+        | BoolExp (value : bool) -> let newReg = getFreshRegister()
+                                    if (value = true)
+                                         // Using the number 4 because it's the number 1, but shifted twice
+                                    then let newInstr = RegProdLine(Register(newReg), Add(I64, Number(4), I1, Number(0)))
+                                         ([newInstr], newReg)
+                                    else let newInstr = RegProdLine(Register(newReg), Add(I64, Number(0), I1, Number(0)))
+                                         ([newInstr], newReg)
           // Generate an LLVM instruction that stores theNum into a fresh register
         | IntExp (theNum : int) -> let newReg = getFreshRegister()
                                    let newNum = theNum * 4
@@ -54,7 +61,22 @@ let rec generate ourTree instrList =
                                                                                    let (rightList, rightResultReg) = generate (List.head (List.tail argsList)) instrList
                                                                                    let subInstr = RegProdLine(Register(finalResultReg), Call(I64, "@sub_prim", [(I64, Register(leftResultReg)); (I64, Register(rightResultReg))]) )
                                                                                    (List.append leftList (List.append rightList [subInstr]), finalResultReg)
-                                                                    | _ -> raise (RuntimeError (sprintf "Found an invalid prim: %A\n" thePrim))
+                                                                   | AST.TimesP -> let finalResultReg = getFreshRegister()
+                                                                                   let (leftList, leftResultReg) = generate (List.head argsList) instrList
+                                                                                   let (rightList, rightResultReg) = generate (List.head (List.tail argsList)) instrList
+                                                                                   let timesInstr = RegProdLine(Register(finalResultReg), Call(I64, "@times_prim", [(I64, Register(leftResultReg)); (I64, Register(rightResultReg))]) )
+                                                                                   (List.append leftList (List.append rightList [timesInstr]), finalResultReg)
+                                                                   | AST.DivP -> let finalResultReg = getFreshRegister()
+                                                                                 let (leftList, leftResultReg) = generate (List.head argsList) instrList
+                                                                                 let (rightList, rightResultReg) = generate (List.head (List.tail argsList)) instrList
+                                                                                 let divInstr = RegProdLine(Register(finalResultReg), Call(I64, "@div_prim", [(I64, Register(leftResultReg)); (I64, Register(rightResultReg))]) )
+                                                                                 (List.append leftList (List.append rightList [divInstr]), finalResultReg)
+                                                                     // TODO: Find out if sqrt should result in a float..?
+                                                                   | AST.SqrtP -> let finalResultReg = getFreshRegister()
+                                                                                  let (leftList, leftResultReg) = generate (List.head argsList) instrList
+                                                                                  let sqrtInstr = RegProdLine(Register(finalResultReg), Call(I64, "@add_prim", [(I64, Register(leftResultReg))]) )
+                                                                                  (List.append leftList (List.append rightList [sqrtInstr]), finalResultReg)
+                                                                   | _ -> raise (RuntimeError (sprintf "Found an invalid prim: %A\n" thePrim))
 (*
         | IfExp of (exp * exp * exp)
         | WhileExp of (exp * exp) /
@@ -88,7 +110,7 @@ let printFieldType theField =
 let printLLVM_Arg theArg = 
     match theArg with
         | Register (name : string) -> name
-          //TODO: Ask clements about when to do the divide by 4 for shifting right again.
+          //TODO: Ask about when to do the divide by 4 for shifting right again.
         | Number (theNum : int) -> string (theNum/4)
         | GlobalLabel (theLabel : string) -> theLabel
 
