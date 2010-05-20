@@ -12,7 +12,7 @@ let testFunc () =
     let defineLine = Define(I64, "ourFunc", [])
     //let inputAST = (IntExp 4)
     let inputAST = PrimExp(PlusP, [IntExp 3; IntExp 5])
-    let (resultList, resultRegister) = generate inputAST (declareLine::[defineLine])
+    let (resultList, resultRegister) = generate inputAST
     printLLVM (declareLine::(defineLine::resultList))
 
 
