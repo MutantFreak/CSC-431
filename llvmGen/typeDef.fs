@@ -19,6 +19,10 @@ type LLVM_Arg =
        // A global label is something like @stuff
      | GlobalLabel of string
 
+type ConditionCode =
+     | Eq
+     | Ne
+
 type Param = (FieldType * string)
 
                         // could be a Register or a number
@@ -43,12 +47,15 @@ and  RegProdInstr =
      | Add of (FieldType * LLVM_Arg * FieldType * LLVM_Arg)
        // Format is "call i64 (...)* @add_prim(i64 5, i64 2)"
      | Call of (FieldType * string * Arg list)
+     | ICmp of (ConditionCode * FieldType * LLVM_Arg * LLVM_Arg)
 
 and  NonRegProdInstr = 
      | Return of (FieldType * LLVM_Arg)
        //should have a list of (FieldType * int)
 //     | GetElementPtr of (FieldType * LLVM_Arg * FieldType * int * FieldType * int)
      | Store of (FieldType * LLVM_Arg * LLVM_Arg)
+       // Br is made up of the i1 field to check (a LLVM_ARG), the label to go to if it's true, and the label to go to if it's false.
+     | Br of (LLVM_Arg * string * string)
 
 // These are all the different types of getelementptr's. Each of them has implicit field types + numbers.
 and  Flavor = 

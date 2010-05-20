@@ -16,6 +16,7 @@ open TypeDef
 exception RuntimeError of string
 
 let registerCounter = ref 1;
+let labelCounter = ref 1;
 
 // Function to produce a fresh register name
 let getFreshRegister () = 
@@ -23,9 +24,15 @@ let getFreshRegister () =
     registerCounter := !registerCounter + 1
     newRegisterName
 
+// Function to produce a fresh label name
+let getFreshLabel () = 
+    let newLabelName = ("%label_" + (string !labelCounter))
+    labelCounter := !labelCounter + 1
+    newLabelName
+
 (* Function that takes in an AST2, and the existing list of LLVM instructions, and returns a new list of LLVM instructions, 
    tupled with a register where the result is stored *)
-let rec generate ourTree instrList =
+let rec generate ourTree =
     match ourTree with
 (*
         ID of (string * int * int)
@@ -54,33 +61,45 @@ let rec generate ourTree instrList =
           // want an equivalent of %r1 = add i64 theNum, 0
         | PrimExp (thePrim : AST.prim, argsList : exp list) -> match thePrim with
                                                                    | AST.PlusP -> let finalResultReg = getFreshRegister()
-                                                                                  let (leftList, leftResultReg) = generate (List.head argsList) instrList
-                                                                                  let (rightList, rightResultReg) = generate (List.head (List.tail argsList)) instrList
+                                                                                  let (leftList, leftResultReg) = generate (List.head argsList)
+                                                                                  let (rightList, rightResultReg) = generate (List.head (List.tail argsList))
                                                                                   let addInstr = RegProdLine(Register(finalResultReg), Call(I64, "@add_prim", [(I64, Register(leftResultReg)); (I64, Register(rightResultReg))]) )
                                                                                   (List.append leftList (List.append rightList [addInstr]), finalResultReg)
                                                                    | AST.MinusP -> let finalResultReg = getFreshRegister()
-                                                                                   let (leftList, leftResultReg) = generate (List.head argsList) instrList
-                                                                                   let (rightList, rightResultReg) = generate (List.head (List.tail argsList)) instrList
+                                                                                   let (leftList, leftResultReg) = generate (List.head argsList)
+                                                                                   let (rightList, rightResultReg) = generate (List.head (List.tail argsList))
                                                                                    let subInstr = RegProdLine(Register(finalResultReg), Call(I64, "@sub_prim", [(I64, Register(leftResultReg)); (I64, Register(rightResultReg))]) )
                                                                                    (List.append leftList (List.append rightList [subInstr]), finalResultReg)
                                                                    | AST.TimesP -> let finalResultReg = getFreshRegister()
-                                                                                   let (leftList, leftResultReg) = generate (List.head argsList) instrList
-                                                                                   let (rightList, rightResultReg) = generate (List.head (List.tail argsList)) instrList
+                                                                                   let (leftList, leftResultReg) = generate (List.head argsList)
+                                                                                   let (rightList, rightResultReg) = generate (List.head (List.tail argsList))
                                                                                    let timesInstr = RegProdLine(Register(finalResultReg), Call(I64, "@times_prim", [(I64, Register(leftResultReg)); (I64, Register(rightResultReg))]) )
                                                                                    (List.append leftList (List.append rightList [timesInstr]), finalResultReg)
                                                                    | AST.DivP -> let finalResultReg = getFreshRegister()
-                                                                                 let (leftList, leftResultReg) = generate (List.head argsList) instrList
-                                                                                 let (rightList, rightResultReg) = generate (List.head (List.tail argsList)) instrList
+                                                                                 let (leftList, leftResultReg) = generate (List.head argsList)
+                                                                                 let (rightList, rightResultReg) = generate (List.head (List.tail argsList))
                                                                                  let divInstr = RegProdLine(Register(finalResultReg), Call(I64, "@div_prim", [(I64, Register(leftResultReg)); (I64, Register(rightResultReg))]) )
                                                                                  (List.append leftList (List.append rightList [divInstr]), finalResultReg)
                                                                      // TODO: The C function's result should be a double, which we have to store.
                                                                    | AST.SqrtP -> let finalResultReg = getFreshRegister()
-                                                                                  let (leftList, leftResultReg) = generate (List.head argsList) instrList
+                                                                                  let (leftList, leftResultReg) = generate (List.head argsList)
                                                                                   let sqrtInstr = RegProdLine(Register(finalResultReg), Call(I64, "@add_prim", [(I64, Register(leftResultReg))]) )
                                                                                   (List.append leftList [sqrtInstr], finalResultReg)
                                                                    | _ -> raise (RuntimeError (sprintf "Found an invalid prim: %A\n" thePrim))
+        | IfExp (ifExp : exp, thenExp : exp, elseExp : exp) -> let (ifList, ifResultReg) = generate (ifExp)
+                                                               let (thenList, thenResultReg) = generate (thenExp)
+                                                               let (elseList, elseResultReg) = generate (elseExp)
+                                                               let thenLabel = getFreshLabel()
+                                                               let elseLabel = getFreshLabel()
+                                                                   // Line1 = generate a line of LLVM code which calls a C function to ensure that the ifResultReg is a bool
+                                                               let callLine = RegProdLine(Register(ifResultReg), Call(I64, "@expectBool", [(I64, Register(ifResultReg))] ))
+                                                                   // Line2 = generate a LLVM line which says %compReg = icmp eq i64 16(16 is a number representing true) ifResultReg
+                                                               let compReg = getFreshRegister()
+                                                               let compLine = RegProdLine(Register(compReg), ICmp(Eq, I64, Number(16), Register(ifResultReg)))
+                                                                   // Line3 = generate a llvm line which says br i1 %compReg, label thenLabel, label elseLabel
+                                                               let branchLine = NonRegProdLine(Br(Register(compReg), thenLabel, elseLabel))
+                                                               ((List.append ifList (callLine:: (compLine :: (branchLine :: (Label(thenLabel) :: (List.append thenList (List.append elseList [Label(elseLabel)]))))))), ifResultReg)
 (*
-        | IfExp of (exp * exp * exp)
         | WhileExp of (exp * exp)
         | ReturnExp of exp
         | SetExp of ((string * int * int) * exp)
@@ -134,6 +153,11 @@ let printRegProdInstr instr =
         | Add (arg1Type : FieldType, arg1: LLVM_Arg, arg2Type : FieldType, arg2 : LLVM_Arg) -> "add " + (printFieldType arg1Type) + " " + (printLLVM_Arg arg1) + ", " + (printFieldType arg2Type) + " " + (printLLVM_Arg arg2)
           // Format is "call i64 (...)* @add_prim(i64 5, i64 2)"
         | Call (theType : FieldType, name : string, argsList : Arg list) -> "call " + (printFieldType theType) + " " + name + " (" + (printArgsList true argsList) + ")"
+        | ICmp (code : ConditionCode, theType : FieldType, label1 : LLVM_Arg, label2 : LLVM_Arg) -> "Icmp is not yet supported."
+
+(* Branch should look like this:
+   br i1 %cond, label %IfEqual, label %IfUnequal
+*)
 
 (* Function that takes a single LLVM instruction, and returns its string representation. *)
 let printLLVMLine singleInstr = 
