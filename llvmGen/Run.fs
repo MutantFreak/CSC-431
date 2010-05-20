@@ -18,13 +18,12 @@ let testFunc () =
 
 (* Testing function that generates the llvm instruction list, and prints it out. *)
 let testFunc2 () =
-    printf "in testFunc\n"
-    let declareLine = Declare(I64, "@sub_prim")
-    let defineLine = Define(I64, "ourFunc", [])
-    //let inputAST = (IntExp 4)
-    let inputAST = PrimExp(MinusP, [IntExp 6; IntExp 7])
-    let (resultList, resultRegister) = generate inputAST (declareLine::[defineLine])
-    printLLVM (declareLine::(defineLine::resultList))
-    
+    printf "in printing test-1.footle\n"
+    let buffer = new System.IO.StreamReader("../../public/clements/footle-examples/test-1.footle")
+    let src = (buffer.ReadToEnd())
+    printf "%O\n" src
+    //printf "%O\n" (lexer src)
+
+
 testFunc()
 testFunc2()

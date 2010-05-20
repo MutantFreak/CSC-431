@@ -76,8 +76,8 @@ let rec generate ourTree instrList =
                                                                      // TODO: The C function's result should be a double, which we have to store.
                                                                    | AST.SqrtP -> let finalResultReg = getFreshRegister()
                                                                                   let (leftList, leftResultReg) = generate (List.head argsList) instrList
-                                                                                 let sqrtInstr = RegProdLine(Register(finalResultReg), Call(I64, "@add_prim", [(I64, Register(leftResultReg))]) )
-                                                                                  (List.append leftList (List.append rightList [sqrtInstr]), finalResultReg)
+                                                                                  let sqrtInstr = RegProdLine(Register(finalResultReg), Call(I64, "@add_prim", [(I64, Register(leftResultReg))]) )
+                                                                                  (List.append leftList [sqrtInstr], finalResultReg)
                                                                    | _ -> raise (RuntimeError (sprintf "Found an invalid prim: %A\n" thePrim))
 (*
         | IfExp of (exp * exp * exp)
