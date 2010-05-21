@@ -106,11 +106,11 @@ let rec generate ourTree =
 (*
         | WhileExp of (exp * exp)
 *)
-(*                                         // Generate the instructions for this returnExp
+                                         // Generate the instructions for this returnExp
         | ReturnExp (returnExp : exp) -> let (instrList, resultReg) = generate returnExp
                                          // Generate an LLVM line that is a return statement to the resultReg we just found. ret i64 resultReg
-                                         let retLine = 
-                                         (List.append instrList [retLine], resultReg) *)
+                                         let retLine = NonRegProdLine(Ret(I64, Register(resultReg)))
+                                         (List.append instrList [retLine], resultReg)
 (*
         | SetExp of ((string * int * int) * exp)
 *)
@@ -180,7 +180,11 @@ let printRegProdInstr instr =
           // Format is "call i64 (...)* @add_prim(i64 5, i64 2)"
         | Call (theType : FieldType, name : string, argsList : Arg list) -> "call " + (printFieldType theType) + " " + name + " (" + (printArgsList true argsList) + ")"
         | ICmp (code : ConditionCode, theType : FieldType, label1 : LLVM_Arg, label2 : LLVM_Arg) -> "Icmp is not yet supported."
-        | Ret (theType : FieldType, label : LLVM_Arg) -> "Icmp is not yet supported."
+
+let printNonRegProdInstr instr =
+    match instr with
+        | Ret (theType : FieldType, label : LLVM_Arg) -> "Ret is not yet supported."
+        | _ -> sprintf "the NonRegProdInstr %A is not yet supported." instr
         
 (* Branch should look like this:
    br i1 %cond, label %IfEqual, label %IfUnequal

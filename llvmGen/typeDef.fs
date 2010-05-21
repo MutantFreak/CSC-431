@@ -49,7 +49,7 @@ and  RegProdInstr =
      | Call of (FieldType * string * Arg list)
      | ICmp of (ConditionCode * FieldType * LLVM_Arg * LLVM_Arg)
        //Should look like ret i64 %r3
-     | Ret of (FieldType * LLVM_Arg)
+     
 
 and  NonRegProdInstr = 
      | Return of (FieldType * LLVM_Arg)
@@ -58,6 +58,8 @@ and  NonRegProdInstr =
      | Store of (FieldType * LLVM_Arg * LLVM_Arg)
        // Br is made up of the i1 field to check (a LLVM_ARG), the label to go to if it's true, and the label to go to if it's false.
      | Br of (LLVM_Arg * string * string)
+       // Looks like ret i64 %r3
+     | Ret of (FieldType * LLVM_Arg)
 
 // These are all the different types of getelementptr's. Each of them has implicit field types + numbers.
 and  Flavor = 
