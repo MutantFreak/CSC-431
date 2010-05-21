@@ -21,14 +21,16 @@ let testFunc () =
 (* Testing function that generates the llvm instruction list, and prints it out. *)
 let testFunc2 () =
     printf "in printing test-1.footle\n"
-    let buffer = new System.IO.StreamReader("../../public/clements/footle-examples/test-1.footle")
+    let buffer = new System.IO.StreamReader("../public/clements/footle-examples/test-5.footle")
     let src = (buffer.ReadToEnd())
     //printf "%O\n" src
     let lexbuf = (LexBuffer<byte>.FromBytes (System.Text.Encoding.ASCII.GetBytes src))
     let lex = (Parser.start Lexer.parsetokens lexbuf)
     printf "%O\n" lex
-    //let statPass = (StaticPass.transform lex)
-    //printf "%O\n" statPass
+    printf "=======================\n"
+    let statPass = (StaticPass.transform lex)
+    printf "%A\n" statPass
+    //let gen = (generate )
 
-testFunc()
+//testFunc()
 testFunc2()
