@@ -62,6 +62,15 @@ let rec generate ourTree =
         | DoubleExp (index : int)
           // remap the double table backwards so that it goes int -> double
           // pull the double out of the table
+            allocate 8 bytes for double.
+            put the double @ given ptr location
+            convert the ptr to an int
+            add the tag bits
+
+            malloc
+            getelement ptr
+            store double into 
+
         | StringExp (index : int)
           // remap the string table backwards so that it goes int -> string
           // pull the stringo ut of the table
