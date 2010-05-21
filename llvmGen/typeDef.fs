@@ -48,6 +48,8 @@ and  RegProdInstr =
        // Format is "call i64 (...)* @add_prim(i64 5, i64 2)"
      | Call of (FieldType * string * Arg list)
      | ICmp of (ConditionCode * FieldType * LLVM_Arg * LLVM_Arg)
+       //Should look like ret i64 %r3
+     | Ret of (FieldType * LLVM_Arg)
 
 and  NonRegProdInstr = 
      | Return of (FieldType * LLVM_Arg)

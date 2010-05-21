@@ -54,8 +54,12 @@ let rec generate ourTree =
                                    let newInstr = RegProdLine(Register(newReg), Add(I64, Number(newNum), I64, Number(0)))
                                    ([newInstr], newReg)
 (*
-        | DoubleExp of int
-        | StringExp of int
+        | DoubleExp (index : int)
+          // remap the double table backwards so that it goes int -> double
+          // pull the double out of the table
+        | StringExp (index : int)
+          // remap the string table backwards so that it goes int -> string
+          // pull the stringo ut of the table
 *)
           // Shift theNum by 2 bits (multiply by 4) to make space for the tag, then add in a small number for the tag (i.e. 1 for the tag bits 01, or 2 for the tag bits 10)
           // want an equivalent of %r1 = add i64 theNum, 0
@@ -101,9 +105,31 @@ let rec generate ourTree =
                                                                ((List.append ifList (callLine:: (compLine :: (branchLine :: (Label(thenLabel) :: (List.append thenList (List.append elseList [Label(elseLabel)]))))))), ifResultReg)
 (*
         | WhileExp of (exp * exp)
-        | ReturnExp of exp
+*)
+(*                                         // Generate the instructions for this returnExp
+        | ReturnExp (returnExp : exp) -> let (instrList, resultReg) = generate returnExp
+                                         // Generate an LLVM line that is a return statement to the resultReg we just found. ret i64 resultReg
+                                         let retLine = 
+                                         (List.append instrList [retLine], resultReg) *)
+(*
         | SetExp of ((string * int * int) * exp)
-        | BeginExp of (expList : exp list)
+*)
+        | BeginExp (expList : exp list) -> match expList with
+                                               // If there are no exp's in this begin, return the assembly equivalent of a voidV
+                                               //Generate an instruction that adds i64 (number value of a voidV) and 0 together into a fresh register
+                                               | [] -> let finalResultReg = getFreshRegister()
+                                                       // Bottom two digits are 10 for bool or void. The next digit up is a 0 to specify a Void.
+                                                       let newInstr = RegProdLine(Register(finalResultReg), Add(I64, Number(4), I1, Number(0)))
+                                                       ([newInstr], finalResultReg)
+                                 
+                                               | _ -> let instrList = ref []
+                                                      let finalResultReg = ref ""
+                                                      for eachExp in expList do
+                                                          let (resultList, resultReg) = generate (eachExp)
+                                                          instrList := List.append !instrList resultList
+                                                          finalResultReg := resultReg
+                                                      (!instrList, !finalResultReg)
+(*
         | FieldRefExp of (exp * int)
         | FieldSetExp of (exp * int * exp)
         | MethodCallExp of (exp * int * exp list)
