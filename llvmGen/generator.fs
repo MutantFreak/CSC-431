@@ -15,10 +15,10 @@ open TypeDef
 
 exception RuntimeError of string
 
-let GdoubleTable = ref 0
-let GstringTable = ref 0
-let GfunctionTable = ref 0
-let GfieldNameTable = ref 0
+let GdoubleTable = ref Map.empty<double,int>
+let GstringTable = ref Map.empty<string,int>
+let GfunctionTable = ref Map.empty<(string * string list * exp * bool),int>
+let GfieldNameTable = ref Map.empty<string,int>
 
 let registerCounter = ref 1;
 let labelCounter = ref 1;
@@ -141,8 +141,9 @@ let rec generate ourTree =
         | NewExp of (exp * exp list)
         | AppExp of (exp * exp list)
         | CloExp of (string * int) 
-        | ScopeExp of (int * string list * exp)
 *)
+        | ScopeExp (blarghle : int, blarghle2 : string list, blarghle3 : exp) -> let (insideList, insideReg) = generate blarghle3
+                                                                                 (List.append [] insideList, "fakeRegister")
         | _ -> raise (RuntimeError (sprintf "Found an expression that is not supported: %A\n" ourTree))
 
 
