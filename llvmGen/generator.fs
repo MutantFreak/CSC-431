@@ -180,7 +180,8 @@ let printRegProdInstr instr =
           // Format is "call i64 (...)* @add_prim(i64 5, i64 2)"
         | Call (theType : FieldType, name : string, argsList : Arg list) -> "call " + (printFieldType theType) + " " + name + " (" + (printArgsList true argsList) + ")"
         | ICmp (code : ConditionCode, theType : FieldType, label1 : LLVM_Arg, label2 : LLVM_Arg) -> "Icmp is not yet supported."
-
+        | Ret (theType : FieldType, label : LLVM_Arg) -> "Icmp is not yet supported."
+        
 (* Branch should look like this:
    br i1 %cond, label %IfEqual, label %IfUnequal
 *)
