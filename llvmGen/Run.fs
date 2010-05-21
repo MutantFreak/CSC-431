@@ -28,9 +28,20 @@ let testFunc2 () =
     let lex = (Parser.start Lexer.parsetokens lexbuf)
     printf "%O\n" lex
     printf "=======================\n"
-    let statPass = (StaticPass.transform lex)
-    printf "%A\n" statPass
-    //let gen = (generate )
+    let (doubleTable,stringTable,functionTable,fieldNameTable) = (StaticPass.transform lex)
+    printf "doubleTable=%A\n" doubleTable
+    printf "stringTable=%A\n" stringTable
+    printf "functionTable=%A\n" functionTable
+    printf "fieldNameTable=%A\n" fieldNameTable
+
+    //convert the funbinding map to a list
+    let funList = Map.toList !functionTable
+    //reverse the list
+    let revFunList = List.rev funList
+    //convert the list into map
+    let funMap = Map.ofList revFunList
+    printf "ourTree=%A\n" funMap
+    //let gen = (wrapperGenerate ourTree table1 table2 table3 table4)
 
 //testFunc()
 testFunc2()

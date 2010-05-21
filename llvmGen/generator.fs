@@ -15,6 +15,11 @@ open TypeDef
 
 exception RuntimeError of string
 
+let GdoubleTable = ref 0
+let GstringTable = ref 0
+let GfunctionTable = ref 0
+let GfieldNameTable = ref 0
+
 let registerCounter = ref 1;
 let labelCounter = ref 1;
 
@@ -139,6 +144,15 @@ let rec generate ourTree =
         | ScopeExp of (int * string list * exp)
 *)
         | _ -> raise (RuntimeError (sprintf "Found an expression that is not supported: %A\n" ourTree))
+
+
+let wrapperGenerate ourTree table1 table2 table3 table4 = 
+    GdoubleTable := table1
+    GstringTable := table2
+    GfunctionTable := table3
+    GfieldNameTable := table4
+    generate ourTree
+
 
 (* Function that takes a FieldType and returns its string representation. *)
 let printFieldType theField = 
