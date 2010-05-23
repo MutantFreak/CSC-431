@@ -111,7 +111,7 @@ let rec generate ourTree =
                                                                let elseLabel = getFreshLabel()
                                                                let isBoolRegister = getFreshRegister()
                                                                    // Line1 = generate a line of LLVM code which calls a C function to ensure that the ifResultReg is a bool.
-                                                                   // Put the result into isTrueRegister(a throw-away register since the result of a call must be stored into something.)
+                                                                   // Put the result into isBoolRegister(a throw-away register since the result of a call must be stored into something.)
                                                                let callLine = RegProdLine(Register(isBoolRegister), Call(I64, "@expectBool", [(I64, Register(ifResultReg))] ))
                                                                    // Line2 = generate a LLVM line which says %compReg = icmp eq i64 16(16 is a number representing true) ifResultReg
                                                                let compReg = getFreshRegister()
@@ -119,28 +119,31 @@ let rec generate ourTree =
                                                                    // Line3 = generate a llvm line which says br i1 %compReg, label thenLabel, label elseLabel
                                                                let branchLine = NonRegProdLine(Br(Register(compReg), thenLabel, elseLabel))
                                                                ((List.append ifList (callLine:: (compLine :: (branchLine :: (Label(thenLabel) :: (List.append thenList (List.append elseList [Label(elseLabel)]))))))), ifResultReg)
-(*
-                                                      // Generate the list of instructions for the guard expression of the while loop
-        | WhileExp (guardExp : exp, bodyExp : exp) -> let (guardInstrList, guardResultReg) = generate guardExp
-// let testBoolInstr = Generate instruction to make sure the guardResultReg is a boolean
-    // Line1 = generate a line of LLVM code which calls a C function to ensure that the ifResultReg is a bool
-                                                      let testBoolInstr = RegProdLine(Register(guardResultReg), Call(I64, "@expectBool", [(I64, Register(guardResultReg))] ))
-// let testTrueInstr = Generate instruction to check if guardResultReg is true
-// let branchInstr = Generate instruction to branch to the body if the testTrueInstr resulted in true, otherwise goto doneLabel
-// let unconditionalBrInstr = Instruction to always jump back up to the testGuardLabel
-let testGuardLabel = Label(getFreshLabel())
-let bodyLabel = Label(getFreshLabel())
-let doneLabel = Label(getFreshLabel())
-
-testGuardLabel :: guardInstrList :: testBoolInstr :: testTrueInstr :: branchInstr :: bodyLabel :: bodyInstrList :: unconditionalBrInstr :: doneLabel
-
-   //Generate the list of instructions for the body of the while loop
-// let (bodyInstrList, bodyResultReg) = generate bodyExp
-
-*)
-                                         // Generate the instructions for this returnExp
-        | ReturnExp (returnExp : exp) -> let (instrList, resultReg) = generate returnExp
-                                         // Generate an LLVM line that is a return statement to the resultReg we just found. ret i64 resultReg
+        | WhileExp (guardExp : exp, bodyExp : exp) ->     // Generate the list of instructions for the guard expression of the while loop
+                                                      let (guardInstrList, guardResultReg) = generate guardExp
+                                                      let testGuardLabel = getFreshLabel()
+                                                      let bodyLabel = getFreshLabel()
+                                                      let doneLabel = getFreshLabel()
+                                                      let isBoolRegister = getFreshRegister()
+                                                          // Line1 = generate a line of LLVM code which calls a C function to ensure that the guardResultReg is a bool.
+                                                          // Put the result into isBoolRegister(a throw-away register since the result of a call must be stored into something.)
+                                                      let testBoolInstr = RegProdLine(Register(isBoolRegister), Call(I64, "@expectBool", [(I64, Register(guardResultReg))] ))
+                                                          // Line2 = generate a LLVM line which says %compReg = icmp eq i64 16(16 is a number representing true) guardResultReg
+                                                      let compReg = getFreshRegister()
+                                                          // Generate an instruction to chec if guardResultReg is true, and put the answer into compReg
+                                                      let testTrueInstr = RegProdLine(Register(compReg), ICmp(Eq, I64, Number(16), Register(guardResultReg)))
+                                                          // A list of instructions produced from the bodyExp, as well as ther egister where the result is stored.
+                                                      let (bodyInstrList, bodyResultReg) = generate bodyExp
+                                                          // Line3 = generate a llvm line which says br i1 %compReg, label bodyLabel, label doneLabel.
+                                                          // Goes to bodyLabel if compReg was true, goes to doneLabel otherwise.
+                                                      let branchInstr = NonRegProdLine(Br(Register(compReg), bodyLabel, doneLabel))
+                                                          // Unconditional branch instruction, placed at the end of the body, which jumps back up to the guard evaluation.
+                                                      let unconditionalBrInstr = NonRegProdLine(UnconditionalBr(Label(testGuardLabel)))
+                                                          // Returns all of the instructions and labels in a list in their correct sequence, tupled with the register where the result of the body is stored.
+                                                      ((Label(testGuardLabel) :: (List.append guardInstrList (testBoolInstr :: (testTrueInstr :: (branchInstr :: (Label(bodyLabel) :: (List.append bodyInstrList (unconditionalBrInstr :: [Label(doneLabel)] )))))))), bodyResultReg)
+        | ReturnExp (returnExp : exp) ->     // Generate the instructions for this returnExp
+                                         let (instrList, resultReg) = generate returnExp
+                                             // Generate an LLVM line that is a return statement to the resultReg we just found. ret i64 resultReg
                                          let retLine = NonRegProdLine(Ret(I64, Register(resultReg)))
                                          (List.append instrList [retLine], resultReg)
 (*
@@ -217,7 +220,7 @@ let rec printArgsList (first:bool) argList =
 (* Function that takes a register producing instruction, and returns its string representation. *)
 let printRegProdInstr instr =
     match instr with
-        | Load (getElementPtrFlavor : Flavor, getElementPtrField : LLVM_Arg, getElementPtrResultRegister : LLVM_Arg) -> "Load is not yet supported."
+        | Load (getElementPtrFlavor : Flavor, gepFieldType : FieldType, getElementPtrField : LLVM_Arg, getElementPtrResultRegister : LLVM_Arg) -> "Load is not yet supported."
         | Add (arg1Type : FieldType, arg1: LLVM_Arg, arg2Type : FieldType, arg2 : LLVM_Arg) -> "add " + (printFieldType arg1Type) + " " + (printLLVM_Arg arg1) + ", " + (printFieldType arg2Type) + " " + (printLLVM_Arg arg2)
           // Format is "call i64 (...)* @add_prim(i64 5, i64 2)"
         | Call (theType : FieldType, name : string, argsList : Arg list) -> "call " + (printFieldType theType) + " " + name + " (" + (printArgsList true argsList) + ")"
