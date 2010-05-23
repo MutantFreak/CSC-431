@@ -373,11 +373,13 @@ define i64 @main_0(%eframe* %env) {
 	// add the tag bits to the int and store that into reg_43
 	// reg_43 now stores our finalized int pointer to the string (tag bits included)
 	%reg_43 = or i64 %reg_42, 1
-	// make reg_44 point to the 0th index in the array of variables that are stored in this frame
+	
+	// make reg_44 point to the 0th index in the array of variables that are stored in this frame	
 	%reg_44 = getelementptr %eframe* %reg_35, i32 0, i32 2, i32 0
 	// store the final product (which is int which is a ptr to strojb + 1 tag bit)
 	// to register 44, (eframe (2 0))
 	store i64 %reg_43, i64* %reg_44
+	
 	
 	// make space for new floatobj
 	%reg_45 = malloc %floatobj, align 4

@@ -20,6 +20,9 @@ let GstringTable = ref Map.empty<string,int>
 let GfunctionTable = ref Map.empty<(string * string list * exp * bool),int>
 let GfieldNameTable = ref Map.empty<string,int>
 
+//name of the register where our current eframe is stored
+let Geframe = ref ""
+
 let registerCounter = ref 1;
 let labelCounter = ref 1;
 
@@ -40,7 +43,7 @@ let getFreshLabel () =
 let rec generate ourTree =
     match ourTree with
 (*
-        ID of (string * int * int)
+        ID of (string * int * int) //get the list of llvm code to traverse eframes until frameOffset decrements to 0
 *)
           // Generate an LLVM instruction that stores an i1 with 1 for true, 0 for false, into a fresh register.
         | BoolExp (value : bool) -> let newReg = getFreshRegister()
@@ -146,9 +149,14 @@ let rec generate ourTree =
                                              // Generate an LLVM line that is a return statement to the resultReg we just found. ret i64 resultReg
                                          let retLine = NonRegProdLine(Ret(I64, Register(resultReg)))
                                          (List.append instrList [retLine], resultReg)
-(*
-        | SetExp of ((string * int * int) * exp)
-*)
+                                         
+        | SetExp ((varName : string, frameOffset : int, fieldOffset : int), theExp : exp) -> //%freshReg = getelementptr %eframe* %!Geframe, i64 0, i64 2, i64 fieldOffset
+                                                                                             //store i64 %insideReg, i64* %freshReg
+                                                                                             let freshReg = getFreshRegister()
+                                                                                             let (insideList, insideReg) = generate theExp
+                                                                                             
+                                                                                             let storeInst = NonRegProdLine(Store (Eframe2Ptr(Register(freshReg), Register(!Geframe), fieldOffset), I64, Register(insideReg), I64ptr, Register(freshReg)))
+                                                                                             (List.append insideList [storeInst], freshReg)
         | BeginExp (expList : exp list) -> match expList with
                                                // If there are no exp's in this begin, return the assembly equivalent of a voidV
                                                //Generate an instruction that adds i64 (number value of a voidV) and 0 together into a fresh register
@@ -220,7 +228,7 @@ let rec printArgsList (first:bool) argList =
 (* Function that takes a register producing instruction, and returns its string representation. *)
 let printRegProdInstr instr =
     match instr with
-        | Load (getElementPtrFlavor : Flavor, gepFieldType : FieldType, getElementPtrField : LLVM_Arg, getElementPtrResultRegister : LLVM_Arg) -> "Load is not yet supported."
+        | Load (getElementPtrFlavor : Flavor, gepFieldType : FieldType, getElementPtrField : LLVM_Arg) -> "Load is not yet supported."
         | Add (arg1Type : FieldType, arg1: LLVM_Arg, arg2Type : FieldType, arg2 : LLVM_Arg) -> "add " + (printFieldType arg1Type) + " " + (printLLVM_Arg arg1) + ", " + (printFieldType arg2Type) + " " + (printLLVM_Arg arg2)
           // Format is "call i64 (...)* @add_prim(i64 5, i64 2)"
         | Call (theType : FieldType, name : string, argsList : Arg list) -> "call " + (printFieldType theType) + " " + name + " (" + (printArgsList true argsList) + ")"
