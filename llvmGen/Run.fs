@@ -23,7 +23,7 @@ let footleTest (str : string) =
     
     printf "\nPrinting source=======================\n"
     let buffer = new System.IO.StreamReader(str)
-    let src = "5; "//(buffer.ReadToEnd())
+    let src = (buffer.ReadToEnd())
     printf "%O\n" src
     
     printf "\nPrinting Lex/Parser result=======================\n"
@@ -38,6 +38,7 @@ let footleTest (str : string) =
     printf "functionTable=%A\n" functionTable
     printf "fieldNameTable=%A\n" fieldNameTable
 
+    printf "\nPrinting llvmGen result=======================\n"
     //convert the funbinding map to a list
     let funList = Map.toList !functionTable
     //reverse the list
@@ -46,8 +47,11 @@ let footleTest (str : string) =
     printf "revFunList=%O\n" revFunList
     let ((theStr : string , theStrList : string list , theExp : exp , theBool : bool) , theInt : int) = (List.head revFunList)
     printf "theExp=%O\n" theExp
-    let (generatedList, finalResultRegister) = (wrapperGenerate theExp !doubleTable !stringTable !functionTable !fieldNameTable)
-    //printf "gen=%O\n" gen
+    let fakeExp = BeginExp[SetExp (("lol", 0, 0), IntExp 5);]
+    printf "fakeExp=%O" fakeExp
+    let (generatedList, finalResultRegister) = (wrapperGenerate fakeExp !doubleTable !stringTable !functionTable !fieldNameTable)
+    printf "generatedList=%O\n" generatedList
+    printf "finalResultRegister=%O\n" finalResultRegister
     printLLVM generatedList
 
 //(string * string list * exp * bool) * int
