@@ -347,11 +347,12 @@ define i64 @main_0(%eframe* %env) {
   // the current env, which is a eframe**
 	store %eframe* %env, %eframe** %reg_36
 	
-	// load the reference, (0 1) slot on env, to reg37
+	// put a reference to field 1 (slot) in env, into reg37
 	%reg_37 = getelementptr %eframe* %reg_35, i32 0, i32 1
 	// put 3, which is the number of variables in this function
 	// into a space pointed at by reg37
 	store i64 3, i64* %reg_37
+	
 	// reg38 gets a pointer to a piece of memory that's the size of strobj
 	%reg_38 = malloc %strobj, align 4
 	// put a reference to the first field of the strobj into reg_39
@@ -375,23 +376,39 @@ define i64 @main_0(%eframe* %env) {
 	// make reg_44 point to the 0th index in the array of variables that are stored in this frame
 	%reg_44 = getelementptr %eframe* %reg_35, i32 0, i32 2, i32 0
 	// store the final product (which is int which is a ptr to strojb + 1 tag bit)
-	// to register 44, (eframe (0 2 0))
+	// to register 44, (eframe (2 0))
 	store i64 %reg_43, i64* %reg_44
 	
 	// make space for new floatobj
 	%reg_45 = malloc %floatobj, align 4
+	// put a reference to field 0 (an i64) of the the floatobj into reg_46
 	%reg_46 = getelementptr %floatobj* %reg_45, i32 0, i32 0
+	// put 3 into the address pointed at by reg_46 which is an i64 of floatobj
 	store i64 3, i64* %reg_46
+	// put a reference to field 1 (a float) of the floatobj into reg_47
 	%reg_47 = getelementptr %floatobj* %reg_45, i32 0, i32 1
+	// typecast the value of the double to a float, 
+	// and store it into reg_47 (the float field of the floatobj)
 	store float fptrunc(double 0x400921f9f01b866e to float), float* %reg_47
+	// turn the ptr for the floatobj located in reg_45 to an i64 and put it into reg_48
 	%reg_48 = ptrtoint %floatobj* %reg_45 to i64
+	// add on the tag bits 01 to the int we just made and put it into reg_49
 	%reg_49 = or i64 %reg_48, 1
+	// put a reference to field (2 1) within the eframe in reg_35, into reg_50
 	%reg_50 = getelementptr %eframe* %reg_35, i32 0, i32 2, i32 1
+	// put our int result (including tag bits) into index 1 of the 
+	// list of variables (reg_50) that are in the program
 	store i64 %reg_49, i64* %reg_50
+	
+	// put a reference to field (2 1) (which is the float we just made) within the eframe in reg_35, into reg_51
 	%reg_51 = getelementptr %eframe* %reg_35, i32 0, i32 2, i32 1
+	// load the i64 from the address in reg_51, into reg_52
 	%reg_52 = load i64* %reg_51
+	// put a reference to field (2 2) (which is the destination) within the eframe in reg_35, into reg_51
 	%reg_53 = getelementptr %eframe* %reg_35, i32 0, i32 2, i32 2
+	// store the i64 we retrieved from memory, into reg_53
 	store i64 %reg_52, i64* %reg_53
+	// return statements
 	ret i64 63
 L_77:
 	ret i64 63
