@@ -138,7 +138,7 @@ let rec generate ourTree =
                                                           // Goes to bodyLabel if compReg was true, goes to doneLabel otherwise.
                                                       let branchInstr = NonRegProdLine(Br(Register(compReg), bodyLabel, doneLabel))
                                                           // Unconditional branch instruction, placed at the end of the body, which jumps back up to the guard evaluation.
-                                                      let unconditionalBrInstr = NonRegProdLine(UnconditionalBr(Label(testGuardLabel)))
+                                                      let unconditionalBrInstr = NonRegProdLine(UnconditionalBr(testGuardLabel))
                                                           // Returns all of the instructions and labels in a list in their correct sequence, tupled with the register where the result of the body is stored.
                                                       ((Label(testGuardLabel) :: (List.append guardInstrList (testBoolInstr :: (testTrueInstr :: (branchInstr :: (Label(bodyLabel) :: (List.append bodyInstrList (unconditionalBrInstr :: [Label(doneLabel)] )))))))), bodyResultReg)
         | ReturnExp (returnExp : exp) ->     // Generate the instructions for this returnExp

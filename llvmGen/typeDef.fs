@@ -43,7 +43,7 @@ type LLVM_Line =
 and  RegProdInstr = 
        // Load is always a getelementptr of some flavor, followed by a load.
        // The flavor of getelementptr, with the LLVM_Arg (%r5 in my p.8 example), with the temp Register where the getelementptr result is stored into.
-     | Load of (Flavor * FieldType * LLVM_Arg)
+     | Load of (Flavor * FieldType * LLVM_Arg * LLVM_Arg)
      | Add of (FieldType * LLVM_Arg * FieldType * LLVM_Arg)
        // Format is "call i64 (...)* @add_prim(i64 5, i64 2)"
      | Call of (FieldType * string * Arg list)
@@ -58,7 +58,7 @@ and  NonRegProdInstr =
      | Store of (Flavor * FieldType * LLVM_Arg * FieldType * LLVM_Arg)
        // Br is made up of the i1 field to check (a LLVM_ARG), the label to go to if it's true, and the label to go to if it's false.
      | Br of (LLVM_Arg * string * string)
-     | UnconditionalBr of (Label)
+     | UnconditionalBr of (string)
        // Looks like ret i64 %r3
      | Ret of (FieldType * LLVM_Arg)
 
