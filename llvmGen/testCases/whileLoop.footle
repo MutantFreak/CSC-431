@@ -1,0 +1,6 @@
+var randomVariable = 6;
+
+while (true)
+{
+   randomVariable = 4;
+}

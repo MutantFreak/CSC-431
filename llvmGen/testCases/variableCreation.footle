@@ -1,0 +1,5 @@
+var testStringValue = "bogusVal";
+
+var testDoubleValue = 3.14159;
+
+var testReference = testDoubleValue

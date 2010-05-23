@@ -1,0 +1,7 @@
+function testFunction ( x )
+{
+   var y = x + 1;
+   return y;
+}
+
+var funcResultValue = testFunction (15);
