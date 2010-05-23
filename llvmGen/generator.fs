@@ -109,8 +109,10 @@ let rec generate ourTree =
                                                                let (elseList, elseResultReg) = generate (elseExp)
                                                                let thenLabel = getFreshLabel()
                                                                let elseLabel = getFreshLabel()
-                                                                   // Line1 = generate a line of LLVM code which calls a C function to ensure that the ifResultReg is a bool
-                                                               let callLine = RegProdLine(Register(ifResultReg), Call(I64, "@expectBool", [(I64, Register(ifResultReg))] ))
+                                                               let isBoolRegister = getFreshRegister()
+                                                                   // Line1 = generate a line of LLVM code which calls a C function to ensure that the ifResultReg is a bool.
+                                                                   // Put the result into isTrueRegister(a throw-away register since the result of a call must be stored into something.)
+                                                               let callLine = RegProdLine(Register(isBoolRegister), Call(I64, "@expectBool", [(I64, Register(ifResultReg))] ))
                                                                    // Line2 = generate a LLVM line which says %compReg = icmp eq i64 16(16 is a number representing true) ifResultReg
                                                                let compReg = getFreshRegister()
                                                                let compLine = RegProdLine(Register(compReg), ICmp(Eq, I64, Number(16), Register(ifResultReg)))
@@ -118,7 +120,23 @@ let rec generate ourTree =
                                                                let branchLine = NonRegProdLine(Br(Register(compReg), thenLabel, elseLabel))
                                                                ((List.append ifList (callLine:: (compLine :: (branchLine :: (Label(thenLabel) :: (List.append thenList (List.append elseList [Label(elseLabel)]))))))), ifResultReg)
 (*
-        | WhileExp of (exp * exp)
+                                                      // Generate the list of instructions for the guard expression of the while loop
+        | WhileExp (guardExp : exp, bodyExp : exp) -> let (guardInstrList, guardResultReg) = generate guardExp
+// let testBoolInstr = Generate instruction to make sure the guardResultReg is a boolean
+    // Line1 = generate a line of LLVM code which calls a C function to ensure that the ifResultReg is a bool
+                                                      let testBoolInstr = RegProdLine(Register(guardResultReg), Call(I64, "@expectBool", [(I64, Register(guardResultReg))] ))
+// let testTrueInstr = Generate instruction to check if guardResultReg is true
+// let branchInstr = Generate instruction to branch to the body if the testTrueInstr resulted in true, otherwise goto doneLabel
+// let unconditionalBrInstr = Instruction to always jump back up to the testGuardLabel
+let testGuardLabel = Label(getFreshLabel())
+let bodyLabel = Label(getFreshLabel())
+let doneLabel = Label(getFreshLabel())
+
+testGuardLabel :: guardInstrList :: testBoolInstr :: testTrueInstr :: branchInstr :: bodyLabel :: bodyInstrList :: unconditionalBrInstr :: doneLabel
+
+   //Generate the list of instructions for the body of the while loop
+// let (bodyInstrList, bodyResultReg) = generate bodyExp
+
 *)
                                          // Generate the instructions for this returnExp
         | ReturnExp (returnExp : exp) -> let (instrList, resultReg) = generate returnExp
