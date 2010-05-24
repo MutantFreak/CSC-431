@@ -154,7 +154,6 @@ let rec generate ourTree =
                                                                                              //store i64 %insideReg, i64* %freshReg
                                                                                              let freshReg = getFreshRegister()
                                                                                              let (insideList, insideReg) = generate theExp
-                                                                                             
                                                                                              let storeInst = NonRegProdLine(Store (Eframe2Ptr(Register(freshReg), Register(!Geframe), fieldOffset), I64, Register(insideReg), I64ptr, Register(freshReg)))
                                                                                              (List.append insideList [storeInst], freshReg)
         | BeginExp (expList : exp list) -> match expList with
@@ -182,7 +181,9 @@ let rec generate ourTree =
 *)
         | ScopeExp (blarghle : int, blarghle2 : string list, blarghle3 : exp) -> let (insideList, insideReg) = generate blarghle3
                                                                                  (List.append [] insideList, "fakeRegister")
-        | _ -> raise (RuntimeError (sprintf "Found an expression that is not supported: %A\n" ourTree))
+                                                                                 
+        | _ -> printf "below ScopeExp"
+               raise (RuntimeError (sprintf "Found an expression that is not supported: %A\n" ourTree))
 
 
 let wrapperGenerate ourTree table1 table2 table3 table4 = 
@@ -234,11 +235,27 @@ let printRegProdInstr instr =
         | Call (theType : FieldType, name : string, argsList : Arg list) -> "call " + (printFieldType theType) + " " + name + " (" + (printArgsList true argsList) + ")"
         | ICmp (code : ConditionCode, theType : FieldType, label1 : LLVM_Arg, label2 : LLVM_Arg) -> "Icmp is not yet supported."
 
+let printFlavor gepType = 
+    match gepType with
+        | Eframe0 (leftReg : LLVM_Arg, argReg : LLVM_Arg) -> (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i32 0, i32 0\n"
+        | Eframe1 (leftReg : LLVM_Arg, argReg : LLVM_Arg) -> (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i32 0, i32 1\n"
+        | Eframe2 (leftReg : LLVM_Arg, argReg : LLVM_Arg, index : int) -> (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i32 0, i32 2, i32 " + sprintf "%d\n" index
+        | Eframe0Ptr (leftReg : LLVM_Arg, argReg : LLVM_Arg) -> "Eframe0Ptr is not yet supported.\n"
+        | Eframe1Ptr (leftReg : LLVM_Arg, argReg : LLVM_Arg) -> "Eframe1Ptr is not yet supported.\n"
+        | Eframe2Ptr (leftReg : LLVM_Arg, argReg : LLVM_Arg, index : int) -> "Eframe2Ptr is not yet supported.\n"
+
 let printNonRegProdInstr instr =
     match instr with
-        | Ret (theType : FieldType, label : LLVM_Arg) -> "Ret is not yet supported."
-        | _ -> sprintf "the NonRegProdInstr %A is not yet supported." instr
-        
+        // flavor is the kind of GEP we have, followed by two registers and their fieldtypes.
+        // The data in first register is saved in memory at the address found in second register.
+        // store i64 3, i64* %reg_37
+        | Store (gepType : Flavor, dataType : FieldType, dataReg : LLVM_Arg, addressType : FieldType, addressReg : LLVM_Arg) -> (printFlavor gepType) + "store " + (printFieldType dataType) + " " + (printLLVM_Arg dataReg) + ", " + (printFieldType addressType) + " " + (printLLVM_Arg addressReg)
+        // Br is made up of the i1 field to check (a LLVM_ARG), the label to go to if it's true, and the label to go to if it's false.
+        | Br (boolReg : LLVM_Arg, trueLabel : string, falseLabel : string) -> "Br is not yet supported."
+        | UnconditionalBr (label : string) -> "UnconditionalBr is not yet supported."
+        | Ret (theType : FieldType, resultReg : LLVM_Arg) -> "Ret is not yet supported."
+
+
 (* Branch should look like this:
    br i1 %cond, label %IfEqual, label %IfUnequal
 *)
@@ -249,7 +266,7 @@ let printLLVMLine singleInstr =
         | Label (name : string) -> name
           //return the name of the register + " = " + the producing instruction
         | RegProdLine (resultRegister : LLVM_Arg, producingInstr : RegProdInstr) -> (printLLVM_Arg resultRegister) + " = " + (printRegProdInstr producingInstr)
-        | NonRegProdLine (nonProducingInstr) -> "Non register producing instructions are not yet supported."
+        | NonRegProdLine (nonProducingInstr) -> (printNonRegProdInstr nonProducingInstr)
         | Declare (theType: FieldType, name : string) -> "declare " + (printFieldType theType) + " " + name
         | Define (theType : FieldType, name : string, paramsList: Param list) -> "define " + (printFieldType theType) + " " + name + " " + (sprintf "%O" paramsList )
 

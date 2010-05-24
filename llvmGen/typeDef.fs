@@ -52,9 +52,6 @@ and  RegProdInstr =
      
 
 and  NonRegProdInstr = 
-     | Return of (FieldType * LLVM_Arg)
-       //should have a list of (FieldType * int)
-//     | GetElementPtr of (FieldType * LLVM_Arg * FieldType * int * FieldType * int)
      // flavor is the kind of GEP we have, followed by two registers and their fieldtypes.
      // The data in first register is saved in memory at the address found in second register.
      | Store of (Flavor * FieldType * LLVM_Arg * FieldType * LLVM_Arg)
