@@ -332,8 +332,6 @@ L_76:
 
 ;; main_0
 
-{%eframe*, i64, [0 x i64]}
-
 define i64 @main_0(%eframe* %env) {
 
   // make space for a new eframe

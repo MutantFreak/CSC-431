@@ -44,13 +44,13 @@ let footleTest (str : string) =
     //reverse the list
     let revFunList = List.rev funList
     //convert the list into map
-    printf "revFunList=%O\n" revFunList
+    //printf "revFunList=%O\n" revFunList
     let ((theStr : string , theStrList : string list , theExp : exp , theBool : bool) , theInt : int) = (List.head revFunList)
-    printf "theExp=%O\n" theExp
-    let fakeExp = BeginExp[SetExp (("lol", 0, 0), IntExp 5);]
-    printf "fakeExp=%O" fakeExp
-    let (generatedList, finalResultRegister) = (wrapperGenerate fakeExp !doubleTable !stringTable !functionTable !fieldNameTable)
-    printf "generatedList=%O\n" generatedList
+    //printf "theExp=%O\n" theExp
+    //let fakeExp = BeginExp[SetExp (("lol", 0, 0), IntExp 5);]
+    //printf "fakeExp=%O" fakeExp
+    let (generatedList, finalResultRegister) = (wrapperGenerate theExp !doubleTable !stringTable !functionTable !fieldNameTable)
+    //printf "generatedList=%O\n" generatedList
     printf "finalResultRegister=%O\n" finalResultRegister
     printLLVM generatedList
 
@@ -58,5 +58,8 @@ let footleTest (str : string) =
 //( ( ((frontFrameMap, count) as frontFrame), frameList) as ourSenv)
 //testFunc()
 
-footleTest("../public/clements/footle-examples/test-1.footle")
+//footleTest("../public/clements/footle-examples/test-1.footle")
+footleTest("testCases/variableCreation.footle")
+footleTest("testCases/whileLoop.footle")
+footleTest("testCases/simpleFunction.footle")
 

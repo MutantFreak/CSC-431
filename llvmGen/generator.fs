@@ -22,6 +22,7 @@ let GfieldNameTable = ref Map.empty<string,int>
 
 //name of the register where our current eframe is stored
 let Geframe = ref ""
+let Genv = ref "%env"
 
 let registerCounter = ref 1;
 let labelCounter = ref 1;
@@ -34,17 +35,23 @@ let getFreshRegister () =
 
 // Function to produce a fresh label name
 let getFreshLabel () = 
-    let newLabelName = ("%label_" + (string !labelCounter))
+    let newLabelName = ("label_" + (string !labelCounter))
     labelCounter := !labelCounter + 1
     newLabelName
+
+let rec traverseEframes frameOffset instList = 
+    []
 
 (* Function that takes in an AST2, and the existing list of LLVM instructions, and returns a new list of LLVM instructions, 
    tupled with a register where the result is stored *)
 let rec generate ourTree =
     match ourTree with
-(*
-        ID of (string * int * int) //get the list of llvm code to traverse eframes until frameOffset decrements to 0
-*)
+        //get the list of llvm code to traverse eframes until frameOffset decrements to 0
+        | ID (varName :string, frameOffset : int, fieldOffset : int) -> let travEF = traverseEframes frameOffset []
+                                                                        let gepReg = getFreshRegister()
+                                                                        let loadResultReg = getFreshRegister()
+                                                                        let loadInstr = RegProdLine(Register(loadResultReg), Load(Eframe2Ptr(Register(gepReg), Register(!Geframe), fieldOffset), I64ptr, Register(gepReg)))
+                                                                        (List.append travEF [loadInstr], loadResultReg)
           // Generate an LLVM instruction that stores an i1 with 1 for true, 0 for false, into a fresh register.
         | BoolExp (value : bool) -> let newReg = getFreshRegister()
                                     if (value = true)
@@ -61,9 +68,9 @@ let rec generate ourTree =
                                    let newNum = theNum * 4
                                    let newInstr = RegProdLine(Register(newReg), Add(I64, Number(newNum), I64, Number(0)))
                                    ([newInstr], newReg)
-(*
-        | DoubleExp (index : int)
-          // remap the double table backwards so that it goes int -> double
+        | DoubleExp (index : int) -> printf "WARNING, DoubleExp IS BROKEN\n"
+                                     ([], "fakeRegister")
+(*        // remap the double table backwards so that it goes int -> double
           // pull the double out of the table
             allocate 8 bytes for double.
             put the double @ given ptr location
@@ -73,13 +80,15 @@ let rec generate ourTree =
             malloc
             getelement ptr
             store double into 
-
-        | StringExp (index : int)
-          // remap the string table backwards so that it goes int -> string
-          // pull the stringo ut of the table
 *)
+        | StringExp (index : int) -> printf "WARNING, StringExp IS BROKEN\n"
+                                     ([], "fakeRegister")
+(*        // remap the string table backwards so that it goes int -> string
+          // pull the stringo ut of the table
+          
           // Shift theNum by 2 bits (multiply by 4) to make space for the tag, then add in a small number for the tag (i.e. 1 for the tag bits 01, or 2 for the tag bits 10)
           // want an equivalent of %r1 = add i64 theNum, 0
+*)
         | PrimExp (thePrim : AST.prim, argsList : exp list) -> match thePrim with
                                                                    | AST.PlusP -> let finalResultReg = getFreshRegister()
                                                                                   let (leftList, leftResultReg) = generate (List.head argsList)
@@ -179,11 +188,18 @@ let rec generate ourTree =
         | AppExp of (exp * exp list)
         | CloExp of (string * int) 
 *)
-        | ScopeExp (blarghle : int, blarghle2 : string list, blarghle3 : exp) -> let (insideList, insideReg) = generate blarghle3
-                                                                                 (List.append [] insideList, "fakeRegister")
-                                                                                 
-        | _ -> printf "below ScopeExp"
-               raise (RuntimeError (sprintf "Found an expression that is not supported: %A\n" ourTree))
+
+        | ScopeExp (numOfVar : int, paramList : string list, theExp : exp) -> let mallocReg = getFreshRegister()
+                                                                              let mallInstr = RegProdLine(Register(mallocReg), Malloc(EFPtr_i64_Arr(numOfVar)))
+                                                                              let bitcastReg = getFreshRegister()
+                                                                              let bitcastInstr = RegProdLine(Register(bitcastReg), Bitcast(EFPtr_i64_Arr_Ptr(numOfVar), Register(mallocReg), EFramePtr))
+                                                                              let storeReg = getFreshRegister()
+                                                                              let storeInst = NonRegProdLine(Store (Eframe0Ptr(Register(storeReg), Register(!Geframe)), EFramePtr, Register(!Genv), I64ptr, Register(storeReg)))
+                                                                              let storeReg2 = getFreshRegister()
+                                                                              let storeInst2 = NonRegProdLine(Store (Eframe1Ptr(Register(storeReg2), Register(!Geframe)), I64, Number(numOfVar), I64ptr, Register(storeReg2)))
+                                                                              let (resultList, resultReg) = generate (theExp)
+                                                                              (List.append [mallInstr; bitcastInstr; storeInst; storeInst2 ] resultList, resultReg)                          
+        | _ -> raise (RuntimeError (sprintf "Found an expression that is not supported: %A\n" ourTree))
 
 
 let wrapperGenerate ourTree table1 table2 table3 table4 = 
@@ -203,11 +219,15 @@ let printFieldType theField =
         | I64ptr -> "i64*"
         | EFramePtr -> "%eframe*"
         | EFramePtrPtr -> "%eframe**"
+        | EFPtr_i64_Arr (index : int) -> "{%eframe*, i64, [" + sprintf "%d" index + " x i64]}"
+        | EFPtr_i64Ptr_Arr (index : int) -> "{%eframe*, i64*, [" + sprintf "%d" index + " x i64]}"
+        | EFPtr_i64_Arr_Ptr (index : int) -> "{%eframe*, i64, [" + sprintf "%d" index + " x i64]}*"  //{%eframe*, i64, [_ x i64]}*
+        | EFPtr_i64Ptr_Arr_Ptr (index : int) -> "{%eframe*, i64*, [" + sprintf "%d" index + " x i64]}*"
         | CloPtr -> "%closure*"
         | CloPtrPtr -> "%closure**"
         | ArrayPtr -> "ArrayPtr not yet supported."
         | ArrayPtrPtr -> "ArrayPtrPtr not yet supported."
-
+        
 (* Function that takes an LLVM_Arg and returns its string representation. *)
 let printLLVM_Arg theArg = 
     match theArg with
@@ -226,34 +246,42 @@ let rec printArgsList (first:bool) argList =
                                                             then (printFieldType theType) + " " + (printLLVM_Arg theArg) + (printArgsList false rest)
                                                             else ", " + (printFieldType theType) + " " + (printLLVM_Arg theArg) + (printArgsList false rest)
 
-(* Function that takes a register producing instruction, and returns its string representation. *)
-let printRegProdInstr instr =
-    match instr with
-        | Load (getElementPtrFlavor : Flavor, gepFieldType : FieldType, getElementPtrField : LLVM_Arg) -> "Load is not yet supported."
-        | Add (arg1Type : FieldType, arg1: LLVM_Arg, arg2Type : FieldType, arg2 : LLVM_Arg) -> "add " + (printFieldType arg1Type) + " " + (printLLVM_Arg arg1) + ", " + (printFieldType arg2Type) + " " + (printLLVM_Arg arg2)
-          // Format is "call i64 (...)* @add_prim(i64 5, i64 2)"
-        | Call (theType : FieldType, name : string, argsList : Arg list) -> "call " + (printFieldType theType) + " " + name + " (" + (printArgsList true argsList) + ")"
-        | ICmp (code : ConditionCode, theType : FieldType, label1 : LLVM_Arg, label2 : LLVM_Arg) -> "Icmp is not yet supported."
-
 let printFlavor gepType = 
     match gepType with
-        | Eframe0 (leftReg : LLVM_Arg, argReg : LLVM_Arg) -> (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i32 0, i32 0\n"
-        | Eframe1 (leftReg : LLVM_Arg, argReg : LLVM_Arg) -> (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i32 0, i32 1\n"
-        | Eframe2 (leftReg : LLVM_Arg, argReg : LLVM_Arg, index : int) -> (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i32 0, i32 2, i32 " + sprintf "%d\n" index
-        | Eframe0Ptr (leftReg : LLVM_Arg, argReg : LLVM_Arg) -> "Eframe0Ptr is not yet supported.\n"
-        | Eframe1Ptr (leftReg : LLVM_Arg, argReg : LLVM_Arg) -> "Eframe1Ptr is not yet supported.\n"
-        | Eframe2Ptr (leftReg : LLVM_Arg, argReg : LLVM_Arg, index : int) -> "Eframe2Ptr is not yet supported.\n"
+        | Eframe0 (leftReg : LLVM_Arg, argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
+        | Eframe1 (leftReg : LLVM_Arg, argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe " + (printLLVM_Arg argReg) + ", i64 0, i64 1\n"
+        | Eframe2 (leftReg : LLVM_Arg, argReg : LLVM_Arg, index : int) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe " + (printLLVM_Arg argReg) + ", i64 0, i64 2, i64 " + sprintf "%d" index + "\n"
+        | Eframe0Ptr (leftReg : LLVM_Arg, argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
+        | Eframe1Ptr (leftReg : LLVM_Arg, argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i64 0, i64 1\n"
+        | Eframe2Ptr (leftReg : LLVM_Arg, argReg : LLVM_Arg, index : int) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i64 0, i64 2, i64 " + sprintf "%d" index + "\n"
+
+let printConditionCode code = 
+    match code with
+        | Eq -> "eq"
+        | Ne -> "ne"
+
+(* Function that takes a register producing instruction, and returns its string representation. *)
+let printRegProdInstr instr resultRegister =
+    match instr with
+        | Load (getElementPtrFlavor : Flavor, gepFieldType : FieldType, getElementPtrField : LLVM_Arg) -> (printFlavor getElementPtrFlavor) + "\t" + (printLLVM_Arg resultRegister) + " = load " + (printFieldType gepFieldType) + " " + (printLLVM_Arg getElementPtrField)
+        | Add (arg1Type : FieldType, arg1: LLVM_Arg, arg2Type : FieldType, arg2 : LLVM_Arg) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "add " + (printFieldType arg1Type) + " " + (printLLVM_Arg arg1) + ", " + (printFieldType arg2Type) + " " + (printLLVM_Arg arg2)
+          // Format is "call i64 (...)* @add_prim(i64 5, i64 2)"
+        | Call (theType : FieldType, name : string, argsList : Arg list) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "call " + (printFieldType theType) + " " + name + " (" + (printArgsList true argsList) + ")"
+        | ICmp (code : ConditionCode, theType : FieldType, arg : LLVM_Arg, label : LLVM_Arg) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "icmp " + (printConditionCode code) + " " + (printFieldType theType) + " " + (printLLVM_Arg arg) + ", " +  (printLLVM_Arg label)
+        | Malloc (theType : FieldType) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "malloc " + (printFieldType theType) + ", align 4" //%reg_34 = malloc {%eframe*, i64, [3 x i64]}, align 4
+        | Bitcast (theType : FieldType, theArg : LLVM_Arg, theType2 : FieldType) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "bitcast " + (printFieldType theType) + " " + (printLLVM_Arg theArg) + " to " + (printFieldType theType2)
+
 
 let printNonRegProdInstr instr =
     match instr with
         // flavor is the kind of GEP we have, followed by two registers and their fieldtypes.
         // The data in first register is saved in memory at the address found in second register.
         // store i64 3, i64* %reg_37
-        | Store (gepType : Flavor, dataType : FieldType, dataReg : LLVM_Arg, addressType : FieldType, addressReg : LLVM_Arg) -> (printFlavor gepType) + "store " + (printFieldType dataType) + " " + (printLLVM_Arg dataReg) + ", " + (printFieldType addressType) + " " + (printLLVM_Arg addressReg)
+        | Store (gepType : Flavor, dataType : FieldType, dataReg : LLVM_Arg, addressType : FieldType, addressReg : LLVM_Arg) ->(printFlavor gepType) + "\t" + "store " + (printFieldType dataType) + " " + (printLLVM_Arg dataReg) + ", " + (printFieldType addressType) + " " + (printLLVM_Arg addressReg)
         // Br is made up of the i1 field to check (a LLVM_ARG), the label to go to if it's true, and the label to go to if it's false.
-        | Br (boolReg : LLVM_Arg, trueLabel : string, falseLabel : string) -> "Br is not yet supported."
-        | UnconditionalBr (label : string) -> "UnconditionalBr is not yet supported."
-        | Ret (theType : FieldType, resultReg : LLVM_Arg) -> "Ret is not yet supported."
+        | Br (boolReg : LLVM_Arg, trueLabel : string, falseLabel : string) -> "\t" + "br i1 " + (printLLVM_Arg boolReg) + ", label %" + trueLabel + ", label %" + falseLabel
+        | UnconditionalBr (label : string) -> "\t" + "br label %" + label
+        | Ret (theType : FieldType, resultReg : LLVM_Arg) -> "\t" + "ret " + (printFieldType theType) + " " + (printLLVM_Arg resultReg)
 
 
 (* Branch should look like this:
@@ -263,9 +291,9 @@ let printNonRegProdInstr instr =
 (* Function that takes a single LLVM instruction, and returns its string representation. *)
 let printLLVMLine singleInstr = 
     match singleInstr with
-        | Label (name : string) -> name
-          //return the name of the register + " = " + the producing instruction
-        | RegProdLine (resultRegister : LLVM_Arg, producingInstr : RegProdInstr) -> (printLLVM_Arg resultRegister) + " = " + (printRegProdInstr producingInstr)
+        | Label (name : string) -> name + ":"
+          //changed the function to take in resultRegister and do it in the called function
+        | RegProdLine (resultRegister : LLVM_Arg, producingInstr : RegProdInstr) -> (printRegProdInstr producingInstr resultRegister)
         | NonRegProdLine (nonProducingInstr) -> (printNonRegProdInstr nonProducingInstr)
         | Declare (theType: FieldType, name : string) -> "declare " + (printFieldType theType) + " " + name
         | Define (theType : FieldType, name : string, paramsList: Param list) -> "define " + (printFieldType theType) + " " + name + " " + (sprintf "%O" paramsList )

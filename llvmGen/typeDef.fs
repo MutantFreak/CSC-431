@@ -1,5 +1,13 @@
 module TypeDef
 
+type DefinedVar = 
+     | Obj
+     | Closure
+     | Strobj
+     | Floatobj
+     | Eframe
+     | Slots
+
 type FieldType = 
      | F64
      | I1
@@ -7,6 +15,10 @@ type FieldType =
      | I64ptr
      | EFramePtr
      | EFramePtrPtr
+     | EFPtr_i64_Arr of (int)
+     | EFPtr_i64Ptr_Arr of (int)
+     | EFPtr_i64_Arr_Ptr of (int)
+     | EFPtr_i64Ptr_Arr_Ptr of (int)
      | CloPtr
      | CloPtrPtr
      | ArrayPtr
@@ -48,7 +60,8 @@ and  RegProdInstr =
        // Format is "call i64 (...)* @add_prim(i64 5, i64 2)"
      | Call of (FieldType * string * Arg list)
      | ICmp of (ConditionCode * FieldType * LLVM_Arg * LLVM_Arg)
-       //Should look like ret i64 %r3
+     | Malloc of (FieldType)
+     | Bitcast of (FieldType * LLVM_Arg * FieldType)
      
 
 and  NonRegProdInstr = 
