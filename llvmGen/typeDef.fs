@@ -67,23 +67,24 @@ and  RegProdInstr =
 
 and  NonRegProdInstr = 
      // flavor is the kind of GEP we have, followed by two registers and their fieldtypes.
-     // The data in first register is saved in memory at the address found in second register.
-     | Store of (Flavor * FieldType * LLVM_Arg * FieldType * LLVM_Arg)
+     // The data in first register is saved in memory at the address found in second register, with the temp Register where the getelementptr result is stored into.
+     | Store of (Flavor * FieldType * LLVM_Arg * FieldType * LLVM_Arg * LLVM_Arg)
        // Br is made up of the i1 field to check (a LLVM_ARG), the label to go to if it's true, and the label to go to if it's false.
      | Br of (LLVM_Arg * string * string)
+       // Looks like br %Label3. Used to unconditionally branch to %Label3
      | UnconditionalBr of (string)
        // Looks like ret i64 %r3
      | Ret of (FieldType * LLVM_Arg)
 
 // These are all the different types of getelementptr's. Each of them has implicit field types + numbers.
 and  Flavor =
-       // The register it's being stored into, tupled with the register it's using, and possibly the int offset into the array if it's on 2
-     | Eframe0 of (LLVM_Arg * LLVM_Arg)
-     | Eframe1 of (LLVM_Arg * LLVM_Arg)
-     | Eframe2 of (LLVM_Arg * LLVM_Arg * int)
-     | Eframe0Ptr of (LLVM_Arg * LLVM_Arg)
-     | Eframe1Ptr of (LLVM_Arg * LLVM_Arg)
-     | Eframe2Ptr of (LLVM_Arg * LLVM_Arg * int)
+       // The register it's using, and possibly the int offset into the array if it's on 2
+     | Eframe0 of (LLVM_Arg)
+     | Eframe1 of (LLVM_Arg)
+     | Eframe2 of (LLVM_Arg * int)
+     | Eframe0Ptr of (LLVM_Arg)
+     | Eframe1Ptr of (LLVM_Arg)
+     | Eframe2Ptr of (LLVM_Arg * int)
 (*
      | EframeParent
      | EFrameCount

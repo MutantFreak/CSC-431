@@ -39,18 +39,30 @@ let getFreshLabel () =
     labelCounter := !labelCounter + 1
     newLabelName
 
-let rec traverseEframes frameOffset instList = 
+(* Function that takes in a frameOffset (how many frames to traverse) and a list of  *)
+let rec traverseEframes frameOffset instrList =    // Genereate a new getelementptr/load instruction
+                                                // let loadResultRegister = getFreshRegister ()
+                                                // let gepRegister = getFreshRegister ()
+                                                   // TODO: Decide what kind of Eframe to use here
+                                                // let newInstr = (loadResultRegister, RegProdLine(Load(Eframe###(gepRegister, registerGEPLoadsFrom))))
+                                                // create a newly grown list out of the list we were given and the new getelementptr/load instruction
+                                                // let newList = List.append instrList [newInstr]
+                                                   // if there's no more frames to traverse, return the list we formed
+                                                // if frameOffset = 0
+                                                // then return newList
+                                                   // otherwise traverse one less eFrame
+                                                // else traverseEframes (frameOffset-1) newList
     []
 
 (* Function that takes in an AST2, and the existing list of LLVM instructions, and returns a new list of LLVM instructions, 
    tupled with a register where the result is stored *)
 let rec generate ourTree =
     match ourTree with
-        //get the list of llvm code to traverse eframes until frameOffset decrements to 0
+        //get the list of llvm instructions to traverse eframes until frameOffset decrements to 0
         | ID (varName :string, frameOffset : int, fieldOffset : int) -> let travEF = traverseEframes frameOffset []
                                                                         let gepReg = getFreshRegister()
                                                                         let loadResultReg = getFreshRegister()
-                                                                        let loadInstr = RegProdLine(Register(loadResultReg), Load(Eframe2Ptr(Register(gepReg), Register(!Geframe), fieldOffset), I64ptr, Register(gepReg)))
+                                                                        let loadInstr = RegProdLine(Register(loadResultReg), Load(Eframe2Ptr(Register(!Geframe), fieldOffset), I64ptr, Register(gepReg)))
                                                                         (List.append travEF [loadInstr], loadResultReg)
           // Generate an LLVM instruction that stores an i1 with 1 for true, 0 for false, into a fresh register.
         | BoolExp (value : bool) -> let newReg = getFreshRegister()
@@ -161,7 +173,7 @@ let rec generate ourTree =
                                          
         | SetExp ((varName : string, frameOffset : int, fieldOffset : int), theExp : exp) -> let freshReg = getFreshRegister()
                                                                                              let (insideList, insideReg) = generate theExp
-                                                                                             let storeInst = NonRegProdLine(Store (Eframe2Ptr(Register(freshReg), Register(!Geframe), fieldOffset), I64, Register(insideReg), I64ptr, Register(freshReg)))
+                                                                                             let storeInst = NonRegProdLine(Store (Eframe2Ptr(Register(!Geframe), fieldOffset), I64, Register(insideReg), I64ptr, Register(freshReg), Register(freshReg)))
                                                                                              (List.append insideList [storeInst], freshReg)
         | BeginExp (expList : exp list) -> match expList with
                                                // If there are no exp's in this begin, return the assembly equivalent of a voidV
@@ -192,9 +204,9 @@ let rec generate ourTree =
                                                                               let bitcastInstr = RegProdLine(Register(bitcastReg), Bitcast(EFPtr_i64_Arr_Ptr(numOfVar), Register(mallocReg), EFramePtr))
                                                                               Geframe := bitcastReg
                                                                               let storeReg = getFreshRegister()
-                                                                              let storeInst = NonRegProdLine(Store (Eframe0Ptr(Register(storeReg), Register(!Geframe)), EFramePtr, Register(!Genv), EFramePtrPtr, Register(storeReg)))
+                                                                              let storeInst = NonRegProdLine(Store (Eframe0Ptr(Register(!Geframe)), EFramePtr, Register(!Genv), EFramePtrPtr, Register(storeReg), Register(storeReg)))
                                                                               let storeReg2 = getFreshRegister()
-                                                                              let storeInst2 = NonRegProdLine(Store (Eframe1Ptr(Register(storeReg2), Register(!Geframe)), I64, ActualNumber(numOfVar), I64ptr, Register(storeReg2)))
+                                                                              let storeInst2 = NonRegProdLine(Store (Eframe1Ptr(Register(!Geframe)), I64, ActualNumber(numOfVar), I64ptr, Register(storeReg2), Register(storeReg2)))
                                                                               let (resultList, resultReg) = generate (theExp)
                                                                               (List.append [mallInstr; bitcastInstr; storeInst; storeInst2 ] resultList, resultReg)                          
         | _ -> raise (RuntimeError (sprintf "Found an expression that is not supported: %A\n" ourTree))
@@ -244,14 +256,15 @@ let rec printArgsList (first:bool) argList =
                                                             then (printFieldType theType) + " " + (printLLVM_Arg theArg) + (printArgsList false rest)
                                                             else ", " + (printFieldType theType) + " " + (printLLVM_Arg theArg) + (printArgsList false rest)
 
-let printFlavor gepType = 
+(* Takes in the type of flavor, and the register the instruction is being put into *)
+let printFlavor gepType (leftReg : LLVM_Arg) = 
     match gepType with
-        | Eframe0 (leftReg : LLVM_Arg, argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
-        | Eframe1 (leftReg : LLVM_Arg, argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe " + (printLLVM_Arg argReg) + ", i64 0, i64 1\n"
-        | Eframe2 (leftReg : LLVM_Arg, argReg : LLVM_Arg, index : int) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe " + (printLLVM_Arg argReg) + ", i64 0, i64 2, i64 " + sprintf "%d" index + "\n"
-        | Eframe0Ptr (leftReg : LLVM_Arg, argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
-        | Eframe1Ptr (leftReg : LLVM_Arg, argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i64 0, i64 1\n"
-        | Eframe2Ptr (leftReg : LLVM_Arg, argReg : LLVM_Arg, index : int) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i64 0, i64 2, i64 " + sprintf "%d" index + "\n"
+        | Eframe0 (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
+        | Eframe1 (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe " + (printLLVM_Arg argReg) + ", i64 0, i64 1\n"
+        | Eframe2 (argReg : LLVM_Arg, index : int) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe " + (printLLVM_Arg argReg) + ", i64 0, i64 2, i64 " + sprintf "%d" index + "\n"
+        | Eframe0Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
+        | Eframe1Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i64 0, i64 1\n"
+        | Eframe2Ptr (argReg : LLVM_Arg, index : int) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i64 0, i64 2, i64 " + sprintf "%d" index + "\n"
 
 let printConditionCode code = 
     match code with
@@ -261,7 +274,7 @@ let printConditionCode code =
 (* Function that takes a register producing instruction, and returns its string representation. *)
 let printRegProdInstr instr resultRegister =
     match instr with
-        | Load (getElementPtrFlavor : Flavor, gepFieldType : FieldType, getElementPtrField : LLVM_Arg) -> (printFlavor getElementPtrFlavor) + "\t" + (printLLVM_Arg resultRegister) + " = load " + (printFieldType gepFieldType) + " " + (printLLVM_Arg getElementPtrField)
+        | Load (getElementPtrFlavor : Flavor, gepFieldType : FieldType, getElementPtrField : LLVM_Arg) -> (printFlavor getElementPtrFlavor getElementPtrField) + "\t" + (printLLVM_Arg resultRegister) + " = load " + (printFieldType gepFieldType) + " " + (printLLVM_Arg getElementPtrField)
         | Add (arg1Type : FieldType, arg1: LLVM_Arg, arg2Type : FieldType, arg2 : LLVM_Arg) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "add " + (printFieldType arg1Type) + " " + (printLLVM_Arg arg1) + ", " + (printFieldType arg2Type) + " " + (printLLVM_Arg arg2)
           // Format is "call i64 (...)* @add_prim(i64 5, i64 2)"
         | Call (theType : FieldType, name : string, argsList : Arg list) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "call " + (printFieldType theType) + " " + name + " (" + (printArgsList true argsList) + ")"
@@ -269,13 +282,13 @@ let printRegProdInstr instr resultRegister =
         | Malloc (theType : FieldType) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "malloc " + (printFieldType theType) + ", align 4" //%reg_34 = malloc {%eframe*, i64, [3 x i64]}, align 4
         | Bitcast (theType : FieldType, theArg : LLVM_Arg, theType2 : FieldType) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "bitcast " + (printFieldType theType) + " " + (printLLVM_Arg theArg) + " to " + (printFieldType theType2)
 
-
+(* Function that takes a non register producing instruction, and returns its string representation. *)
 let printNonRegProdInstr instr =
     match instr with
         // flavor is the kind of GEP we have, followed by two registers and their fieldtypes.
         // The data in first register is saved in memory at the address found in second register.
         // store i64 3, i64* %reg_37
-        | Store (gepType : Flavor, dataType : FieldType, dataReg : LLVM_Arg, addressType : FieldType, addressReg : LLVM_Arg) ->(printFlavor gepType) + "\t" + "store " + (printFieldType dataType) + " " + (printLLVM_Arg dataReg) + ", " + (printFieldType addressType) + " " + (printLLVM_Arg addressReg)
+        | Store (gepType : Flavor, dataType : FieldType, dataReg : LLVM_Arg, addressType : FieldType, addressReg : LLVM_Arg, gepRegister : LLVM_Arg) ->(printFlavor gepType gepRegister) + "\t" + "store " + (printFieldType dataType) + " " + (printLLVM_Arg dataReg) + ", " + (printFieldType addressType) + " " + (printLLVM_Arg addressReg)
         // Br is made up of the i1 field to check (a LLVM_ARG), the label to go to if it's true, and the label to go to if it's false.
         | Br (boolReg : LLVM_Arg, trueLabel : string, falseLabel : string) -> "\t" + "br i1 " + (printLLVM_Arg boolReg) + ", label %" + trueLabel + ", label %" + falseLabel
         | UnconditionalBr (label : string) -> "\t" + "br label %" + label
