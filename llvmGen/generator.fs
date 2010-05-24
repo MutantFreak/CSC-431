@@ -159,9 +159,7 @@ let rec generate ourTree =
                                          let retLine = NonRegProdLine(Ret(I64, Register(resultReg)))
                                          (List.append instrList [retLine], resultReg)
                                          
-        | SetExp ((varName : string, frameOffset : int, fieldOffset : int), theExp : exp) -> //%freshReg = getelementptr %eframe* %!Geframe, i64 0, i64 2, i64 fieldOffset
-                                                                                             //store i64 %insideReg, i64* %freshReg
-                                                                                             let freshReg = getFreshRegister()
+        | SetExp ((varName : string, frameOffset : int, fieldOffset : int), theExp : exp) -> let freshReg = getFreshRegister()
                                                                                              let (insideList, insideReg) = generate theExp
                                                                                              let storeInst = NonRegProdLine(Store (Eframe2Ptr(Register(freshReg), Register(!Geframe), fieldOffset), I64, Register(insideReg), I64ptr, Register(freshReg)))
                                                                                              (List.append insideList [storeInst], freshReg)
@@ -188,15 +186,15 @@ let rec generate ourTree =
         | AppExp of (exp * exp list)
         | CloExp of (string * int) 
 *)
-
         | ScopeExp (numOfVar : int, paramList : string list, theExp : exp) -> let mallocReg = getFreshRegister()
                                                                               let mallInstr = RegProdLine(Register(mallocReg), Malloc(EFPtr_i64_Arr(numOfVar)))
                                                                               let bitcastReg = getFreshRegister()
                                                                               let bitcastInstr = RegProdLine(Register(bitcastReg), Bitcast(EFPtr_i64_Arr_Ptr(numOfVar), Register(mallocReg), EFramePtr))
+                                                                              Geframe := bitcastReg
                                                                               let storeReg = getFreshRegister()
-                                                                              let storeInst = NonRegProdLine(Store (Eframe0Ptr(Register(storeReg), Register(!Geframe)), EFramePtr, Register(!Genv), I64ptr, Register(storeReg)))
+                                                                              let storeInst = NonRegProdLine(Store (Eframe0Ptr(Register(storeReg), Register(!Geframe)), EFramePtr, Register(!Genv), EFramePtrPtr, Register(storeReg)))
                                                                               let storeReg2 = getFreshRegister()
-                                                                              let storeInst2 = NonRegProdLine(Store (Eframe1Ptr(Register(storeReg2), Register(!Geframe)), I64, Number(numOfVar), I64ptr, Register(storeReg2)))
+                                                                              let storeInst2 = NonRegProdLine(Store (Eframe1Ptr(Register(storeReg2), Register(!Geframe)), I64, ActualNumber(numOfVar), I64ptr, Register(storeReg2)))
                                                                               let (resultList, resultReg) = generate (theExp)
                                                                               (List.append [mallInstr; bitcastInstr; storeInst; storeInst2 ] resultList, resultReg)                          
         | _ -> raise (RuntimeError (sprintf "Found an expression that is not supported: %A\n" ourTree))
@@ -208,7 +206,6 @@ let wrapperGenerate ourTree table1 table2 table3 table4 =
     GfunctionTable := table3
     GfieldNameTable := table4
     generate ourTree
-
 
 (* Function that takes a FieldType and returns its string representation. *)
 let printFieldType theField = 
@@ -235,6 +232,7 @@ let printLLVM_Arg theArg =
           //TODO: Ask about when to do the divide by 4 for shifting right again.
         | Number (theNum : int) -> string (theNum/4)
         | GlobalLabel (theLabel : string) -> theLabel
+        | ActualNumber (theNum : int) -> string (theNum)
 
 (* Function to print out an args list. first says whether or not this is the first argument, used to decide whether or not to put a comma in. *)
 let rec printArgsList (first:bool) argList =
@@ -282,7 +280,6 @@ let printNonRegProdInstr instr =
         | Br (boolReg : LLVM_Arg, trueLabel : string, falseLabel : string) -> "\t" + "br i1 " + (printLLVM_Arg boolReg) + ", label %" + trueLabel + ", label %" + falseLabel
         | UnconditionalBr (label : string) -> "\t" + "br label %" + label
         | Ret (theType : FieldType, resultReg : LLVM_Arg) -> "\t" + "ret " + (printFieldType theType) + " " + (printLLVM_Arg resultReg)
-
 
 (* Branch should look like this:
    br i1 %cond, label %IfEqual, label %IfUnequal

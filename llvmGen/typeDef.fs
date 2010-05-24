@@ -30,6 +30,7 @@ type LLVM_Arg =
      | Number of int
        // A global label is something like @stuff
      | GlobalLabel of string
+     | ActualNumber of int
 
 type ConditionCode =
      | Eq
