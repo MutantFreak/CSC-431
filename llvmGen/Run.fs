@@ -46,7 +46,7 @@ let footleTest (str : string) =
     //convert the list into map
     //printf "revFunList=%O\n" revFunList
     let ((theStr : string , theStrList : string list , theExp : exp , theBool : bool) , theInt : int) = (List.head revFunList)
-    //printf "theExp=%O\n" theExp
+    printf "theExp=%O\n" theExp
     //let fakeExp = BeginExp[SetExp (("lol", 0, 0), IntExp 5);]
     //printf "fakeExp=%O" fakeExp
     let (generatedList, finalResultRegister) = (wrapperGenerate theExp !doubleTable !stringTable !functionTable !fieldNameTable)
@@ -59,7 +59,7 @@ let footleTest (str : string) =
 //testFunc()
 
 //footleTest("../public/clements/footle-examples/test-1.footle")
-footleTest("testCases/variableCreation.footle")
-footleTest("testCases/whileLoop.footle")
-footleTest("testCases/simpleFunction.footle")
+//footleTest("testCases/variableCreation.footle")
+footleTest("testCases/whileLoop2.footle")
+//footleTest("testCases/simpleFunction.footle")
 
