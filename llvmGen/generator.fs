@@ -39,46 +39,52 @@ let getFreshLabel () =
     labelCounter := !labelCounter + 1
     newLabelName
 
-(* Function that takes in a frameOffset (how many frames to traverse) and a list of  *)
-let rec traverseEframes frameOffset instrList =    // Genereate a new getelementptr/load instruction
-                                                // let loadResultRegister = getFreshRegister ()
-                                                // let gepRegister = getFreshRegister ()
-                                                   // TODO: Decide what kind of Eframe to use here
-                                                // let newInstr = (loadResultRegister, RegProdLine(Load(Eframe###(gepRegister, registerGEPLoadsFrom))))
-                                                // create a newly grown list out of the list we were given and the new getelementptr/load instruction
-                                                // let newList = List.append instrList [newInstr]
-                                                   // if there's no more frames to traverse, return the list we formed
-                                                // if frameOffset = 0
-                                                // then return newList
-                                                   // otherwise traverse one less eFrame
-                                                // else traverseEframes (frameOffset-1) newList
-    []
-
+(* Function that takes in a frameOffset (how many frames to traverse) and a list of frameOffset sets of (gep & load) instrs.
+   instrList is the existing instr list - it starts off as [].
+   frameWereIn is the frame that we are currently referencing parts of. *)
+let rec traverseEframes frameOffset instrList frameWereIn = let loadResultRegister:string = getFreshRegister()
+                                                            let gepResultRegister = getFreshRegister()
+                                                            // if frameOffset is 0, we're done traversing, so return the list.
+                                                            if (frameOffset = 0)
+                                                            then (instrList, frameWereIn)
+                                                                 // Otherwise generate another gep & load instruction to move up one eframe
+                                                            else let newInstr = RegProdLine(Register(loadResultRegister), Load(Eframe0Ptr(frameWereIn), EFramePtrPtr, Register(gepResultRegister)))
+                                                                 ((List.append instrList [newInstr]), Register(loadResultRegister)) // supposed to be LLVM_ARG, but was string
 (* Function that takes in an AST2, and the existing list of LLVM instructions, and returns a new list of LLVM instructions, 
    tupled with a register where the result is stored *)
 let rec generate ourTree =
     match ourTree with
         //get the list of llvm instructions to traverse eframes until frameOffset decrements to 0
-        | ID (varName :string, frameOffset : int, fieldOffset : int) -> let travEF = traverseEframes frameOffset []
+        | ID (varName :string, frameOffset : int, fieldOffset : int) -> // Generate one last set of GEP and load from the result of traversing, into a final result.
+                                                                        // %reg_51 = getelementptr %eframe* traverseResultReg, i32 0, i32 2, i32 1
+                                                                        let frameWereIn = !Genv
+                                                                        // traverseInstrList is the list of instructions used to traverse eFrames going upwards.
+                                                                        // traverseResultReg is the register where the final eFrame which we want to use is stored.
+                                                                        let (traverseInstrList, traverseResultReg) = traverseEframes frameOffset [] (Register(frameWereIn)) //supposed to be LLVM_Arg, but was string
                                                                         let gepReg = getFreshRegister()
                                                                         let loadResultReg = getFreshRegister()
-                                                                        let loadInstr = RegProdLine(Register(loadResultReg), Load(Eframe2Ptr(Register(!Geframe), fieldOffset), I64ptr, Register(gepReg)))
-                                                                        (List.append travEF [loadInstr], loadResultReg)
+                                                                        (*	Produce something like this. reg_35 is traverseResultReg. reg_51 is gepReg.
+                                                                           $reg_52 is loadResultReg.
+                                                                           %reg_51 = getelementptr %eframe* %reg_35, i32 0, i32 2, i32 1
+	                                                                        // load the i64 from the address in reg_51, into reg_52
+	                                                                        %reg_52 = load i64* %reg_51 *)
+                                                                        let loadInstr = RegProdLine(Register(loadResultReg), Load(Eframe2Ptr(traverseResultReg, fieldOffset), I64ptr, Register(gepReg)))
+                                                                        ((List.append traverseInstrList [loadInstr]), loadResultReg)
           // Generate an LLVM instruction that stores an i1 with 1 for true, 0 for false, into a fresh register.
         | BoolExp (value : bool) -> let newReg = getFreshRegister()
                                     if (value = true)
                                          (* Using the number 14 because it's the number 1, but shifted three times (100), added 4 to 
                                             signify it's a boolean, and added 2 to signify it's a boolean or void. Result is 1110 *)
-                                    then let newInstr = RegProdLine(Register(newReg), Add(I64, Number(14), I1, Number(0)))
+                                    then let newInstr = RegProdLine(Register(newReg), Add(I64, Number(14), Number(0)))
                                          ([newInstr], newReg)
                                          (* Using the number 6 to signify 0110. Last 2 digits (10) signify it's a boolean or void, and
                                             the extra 1 signifies it is a bool, and the first 0 means it's false. *)
-                                    else let newInstr = RegProdLine(Register(newReg), Add(I64, Number(6), I1, Number(0)))
+                                    else let newInstr = RegProdLine(Register(newReg), Add(I64, Number(6), Number(0)))
                                          ([newInstr], newReg)
           // Generate an LLVM instruction that stores theNum into a fresh register
         | IntExp (theNum : int) -> let newReg = getFreshRegister()
                                    let newNum = theNum * 4
-                                   let newInstr = RegProdLine(Register(newReg), Add(I64, Number(newNum), I64, Number(0)))
+                                   let newInstr = RegProdLine(Register(newReg), Add(I64, Number(newNum), Number(0)))
                                    ([newInstr], newReg)
         | DoubleExp (index : int) -> printf "WARNING, DoubleExp IS BROKEN\n"
                                      ([], "fakeRegister")
@@ -181,7 +187,7 @@ let rec generate ourTree =
                                                //Generate an instruction that adds i64 (number value of a voidV) and 0 together into a fresh register
                                                | [] -> let finalResultReg = getFreshRegister()
                                                        // Bottom two digits are 10 for bool or void. The next digit up is a 0 to specify a Void.
-                                                       let newInstr = RegProdLine(Register(finalResultReg), Add(I64, Number(4), I1, Number(0)))
+                                                       let newInstr = RegProdLine(Register(finalResultReg), Add(I64, Number(4), Number(0)))
                                                        ([newInstr], finalResultReg)
                                  
                                                | _ -> let instrList = ref []
@@ -276,7 +282,7 @@ let printConditionCode code =
 let printRegProdInstr instr resultRegister =
     match instr with
         | Load (getElementPtrFlavor : Flavor, gepFieldType : FieldType, getElementPtrField : LLVM_Arg) -> (printFlavor getElementPtrFlavor getElementPtrField) + "\t" + (printLLVM_Arg resultRegister) + " = load " + (printFieldType gepFieldType) + " " + (printLLVM_Arg getElementPtrField)
-        | Add (arg1Type : FieldType, arg1: LLVM_Arg, arg2Type : FieldType, arg2 : LLVM_Arg) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "add " + (printFieldType arg1Type) + " " + (printLLVM_Arg arg1) + ", " + (printFieldType arg2Type) + " " + (printLLVM_Arg arg2)
+        | Add (arg1Type : FieldType, arg1: LLVM_Arg, arg2 : LLVM_Arg) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "add " + (printFieldType arg1Type) + " " + (printLLVM_Arg arg1) + ", " + (printLLVM_Arg arg2)
           // Format is "call i64 (...)* @add_prim(i64 5, i64 2)"
         | Call (theType : FieldType, name : string, argsList : Arg list) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "call " + (printFieldType theType) + " " + name + " (" + (printArgsList true argsList) + ")"
         | ICmp (code : ConditionCode, theType : FieldType, arg : LLVM_Arg, label : LLVM_Arg) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "icmp " + (printConditionCode code) + " " + (printFieldType theType) + " " + (printLLVM_Arg arg) + ", " +  (printLLVM_Arg label)

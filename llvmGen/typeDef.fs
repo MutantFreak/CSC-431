@@ -57,7 +57,7 @@ and  RegProdInstr =
        // Load is always a getelementptr of some flavor, followed by a load.
        // The flavor of getelementptr, with the LLVM_Arg (%r5 in my p.8 example), with the temp Register where the getelementptr result is stored into.
      | Load of (Flavor * FieldType * LLVM_Arg)
-     | Add of (FieldType * LLVM_Arg * FieldType * LLVM_Arg)
+     | Add of (FieldType * LLVM_Arg * LLVM_Arg)
        // Format is "call i64 (...)* @add_prim(i64 5, i64 2)"
      | Call of (FieldType * string * Arg list)
      | ICmp of (ConditionCode * FieldType * LLVM_Arg * LLVM_Arg)
@@ -76,7 +76,7 @@ and  NonRegProdInstr =
        // Looks like ret i64 %r3
      | Ret of (FieldType * LLVM_Arg)
 
-// These are all the different types of getelementptr's. Each of them has implicit field types + numbers.
+// These are all the different types of getelementptr's. Each of them has implicit field types + numbers based off their names.
 and  Flavor =
        // The register it's using, and possibly the int offset into the array if it's on 2
      | Eframe0 of (LLVM_Arg)
