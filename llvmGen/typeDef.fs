@@ -11,6 +11,9 @@ type DefinedVar =
 type FieldType = 
      | F64
      | I1
+     | I8
+     | I8Ptr
+     | I8PtrPtr
      | I64
      | I64ptr
      | EFramePtr
@@ -23,6 +26,9 @@ type FieldType =
      | CloPtrPtr
      | ArrayPtr
      | ArrayPtrPtr
+       // eg. [9 x i8] or [0 x i64]
+     | Array of (int * FieldType)
+     | StrObj
 
 // Anywhere you can use a register, you can also use a number
 type LLVM_Arg =
@@ -31,6 +37,7 @@ type LLVM_Arg =
        // A global label is something like @stuff
      | GlobalLabel of string
      | ActualNumber of int
+     | Constant of string
 
 type ConditionCode =
      | Eq
@@ -85,6 +92,9 @@ and  Flavor =
      | Eframe0Ptr of (LLVM_Arg)
      | Eframe1Ptr of (LLVM_Arg)
      | Eframe2Ptr of (LLVM_Arg * int)
+     | StrObj0Ptr of (LLVM_Arg)
+     | StrObj1Ptr of (LLVM_Arg)
+     | StrObj2Ptr of (LLVM_Arg * int)
 (*
      | EframeParent
      | EFrameCount

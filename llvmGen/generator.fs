@@ -26,6 +26,7 @@ let Genv = ref "%env"
 
 let registerCounter = ref 1;
 let labelCounter = ref 1;
+let stringNameCounter = ref 1;
 
 // Function to produce a fresh register name
 let getFreshRegister () = 
@@ -39,6 +40,13 @@ let getFreshLabel () =
     labelCounter := !labelCounter + 1
     newLabelName
 
+// Function to produce a fresh string name. eg. @stringconst_0s
+let getFreshStringName () = 
+    let newStringName = ("@stringconst_" + (string !stringNameCounter) + "s")
+    stringNameCounter := !stringNameCounter + 1
+    newStringName
+
+
 (* Function that takes in a frameOffset (how many frames to traverse) and a list of frameOffset sets of (gep & load) instrs.
    instrList is the existing instr list - it starts off as [].
    frameWereIn is the frame that we are currently referencing parts of. *)
@@ -49,7 +57,8 @@ let rec traverseEframes frameOffset instrList frameWereIn = let loadResultRegist
                                                             then (instrList, frameWereIn)
                                                                  // Otherwise generate another gep & load instruction to move up one eframe
                                                             else let newInstr = RegProdLine(Register(loadResultRegister), Load(Eframe0Ptr(frameWereIn), EFramePtrPtr, Register(gepResultRegister)))
-                                                                 ((List.append instrList [newInstr]), Register(loadResultRegister)) // supposed to be LLVM_ARG, but was string
+                                                                 ((List.append instrList [newInstr]), Register(loadResultRegister))
+
 (* Function that takes in an AST2, and the existing list of LLVM instructions, and returns a new list of LLVM instructions, 
    tupled with a register where the result is stored *)
 let rec generate ourTree =
@@ -60,7 +69,7 @@ let rec generate ourTree =
                                                                         let frameWereIn = !Genv
                                                                         // traverseInstrList is the list of instructions used to traverse eFrames going upwards.
                                                                         // traverseResultReg is the register where the final eFrame which we want to use is stored.
-                                                                        let (traverseInstrList, traverseResultReg) = traverseEframes frameOffset [] (Register(frameWereIn)) //supposed to be LLVM_Arg, but was string
+                                                                        let (traverseInstrList, traverseResultReg) = traverseEframes frameOffset [] (Register(frameWereIn))
                                                                         let gepReg = getFreshRegister()
                                                                         let loadResultReg = getFreshRegister()
                                                                         (*	Produce something like this. reg_35 is traverseResultReg. reg_51 is gepReg.
@@ -102,8 +111,24 @@ let rec generate ourTree =
         | StringExp (index : int) -> printf "WARNING, StringExp IS BROKEN\n"
                                      ([], "fakeRegister")
 (*        // remap the string table backwards so that it goes int -> string
-          // pull the stringo ut of the table
-          
+          // pull the string out of the table
+          let mallocResultReg = getFreshRegister()
+          let store0ResultReg = getFreshRegister()
+          let reg3 = getFreshRegister()
+          let reg4 = getFreshRegister()
+          let reg5 = getFreshRegister()
+          let reg6 = getFreshRegister()
+
+         let line1 = RegProdLine(mallocResultReg, Malloc(StrObj))
+           %reg_38 = malloc %strobj, align 4
+	         // put a reference to the first field of the strobj into reg_39
+	         %reg_39 = getelementptr %strobj* %reg_38, i32 0, i32 0
+         let line2 = RegPodLine(store0ResultReg, Store(StrObj0Ptr(mallocResultReg), I64, Number(1), I64Ptr, gep0ResultReg, gep0ResultReg))
+         let line3 = RegProdLine(store1ResultReg, Store(StrObj1Ptr(mallocResultReg), SlotsPtr, Constant("@empty_slots"), SlotsPtrPtr, gep1ResultReg, gep1ResultReg))
+         let line2 = reg_2 = gep strobj 0 0
+         let line2 = store 1 reg_2
+         let line3 = 
+
           // Shift theNum by 2 bits (multiply by 4) to make space for the tag, then add in a small number for the tag (i.e. 1 for the tag bits 01, or 2 for the tag bits 10)
           // want an equivalent of %r1 = add i64 theNum, 0
 *)
@@ -224,25 +249,39 @@ let wrapperGenerate ourTree table1 table2 table3 table4 =
     GstringTable := table2
     GfunctionTable := table3
     GfieldNameTable := table4
+    
+    (*
+    let sdf = "function decalrations go here\n\n\n\n\n"
+    let funcBodies = go through function table & generate LLVM lines for the insides of functions
+    let defineLine = Define(I64, "@main", [(EFramePtr, "%env")])
+    let (bodyInstrs, resultReg) = generate ourTree
+    ((sdf :: randomFuncBodies :: defineLine :: bodyInstrs), resultReg)
+    *)
     generate ourTree
+    
 
 (* Function that takes a FieldType and returns its string representation. *)
-let printFieldType theField = 
-    match theField with
-        | F64 -> "f64"
-        | I1 -> "i1"
-        | I64 -> "i64"
-        | I64ptr -> "i64*"
-        | EFramePtr -> "%eframe*"
-        | EFramePtrPtr -> "%eframe**"
-        | EFPtr_i64_Arr (index : int) -> "{%eframe*, i64, [" + sprintf "%d" index + " x i64]}"
-        | EFPtr_i64Ptr_Arr (index : int) -> "{%eframe*, i64*, [" + sprintf "%d" index + " x i64]}"
-        | EFPtr_i64_Arr_Ptr (index : int) -> "{%eframe*, i64, [" + sprintf "%d" index + " x i64]}*"  //{%eframe*, i64, [_ x i64]}*
-        | EFPtr_i64Ptr_Arr_Ptr (index : int) -> "{%eframe*, i64*, [" + sprintf "%d" index + " x i64]}*"
-        | CloPtr -> "%closure*"
-        | CloPtrPtr -> "%closure**"
-        | ArrayPtr -> "ArrayPtr not yet supported."
-        | ArrayPtrPtr -> "ArrayPtrPtr not yet supported."
+let rec printFieldType theField = 
+        match theField with
+            | F64 -> "f64"
+            | I1 -> "i1"
+            | I8 -> "i8"
+            | I8Ptr -> "i8*"
+            | I8PtrPtr -> "i8**"
+            | I64 -> "i64"
+            | I64ptr -> "i64*"
+            | EFramePtr -> "%eframe*"
+            | EFramePtrPtr -> "%eframe**"
+            | EFPtr_i64_Arr (index : int) -> "{%eframe*, i64, [" + sprintf "%d" index + " x i64]}"
+            | EFPtr_i64Ptr_Arr (index : int) -> "{%eframe*, i64*, [" + sprintf "%d" index + " x i64]}"
+            | EFPtr_i64_Arr_Ptr (index : int) -> "{%eframe*, i64, [" + sprintf "%d" index + " x i64]}*"  //{%eframe*, i64, [_ x i64]}*
+            | EFPtr_i64Ptr_Arr_Ptr (index : int) -> "{%eframe*, i64*, [" + sprintf "%d" index + " x i64]}*"
+            | CloPtr -> "%closure*"
+            | CloPtrPtr -> "%closure**"
+            | ArrayPtr -> "ArrayPtr not yet supported."
+            | ArrayPtrPtr -> "ArrayPtrPtr not yet supported."
+            | Array (num : int, field : FieldType) -> "[" + string num + " x " + printFieldType field + "]"
+            | StrObj -> "%strobj"
         
 (* Function that takes an LLVM_Arg and returns its string representation. *)
 let printLLVM_Arg theArg = 
@@ -252,6 +291,7 @@ let printLLVM_Arg theArg =
         | Number (theNum : int) -> string (theNum/4)
         | GlobalLabel (theLabel : string) -> theLabel
         | ActualNumber (theNum : int) -> string (theNum)
+        | Constant (name : string) -> name
 
 (* Function to print out an args list. first says whether or not this is the first argument, used to decide whether or not to put a comma in. *)
 let rec printArgsList (first:bool) argList =
@@ -272,6 +312,9 @@ let printFlavor gepType (leftReg : LLVM_Arg) =
         | Eframe0Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
         | Eframe1Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i64 0, i64 1\n"
         | Eframe2Ptr (argReg : LLVM_Arg, index : int) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i64 0, i64 2, i64 " + sprintf "%d" index + "\n"
+        | StrObj0Ptr (argReg : LLVM_Arg) -> (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
+        | StrObj1Ptr (argReg : LLVM_Arg) -> (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 1\n"
+        | StrObj2Ptr (argReg : LLVM_Arg, index : int) -> (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 2, i64 " + (string index) + "\n"
 
 let printConditionCode code = 
     match code with
