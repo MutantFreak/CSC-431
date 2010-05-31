@@ -70,6 +70,13 @@ and  RegProdInstr =
      | ICmp of (ConditionCode * FieldType * LLVM_Arg * LLVM_Arg)
      | Malloc of (FieldType)
      | Bitcast of (FieldType * LLVM_Arg * FieldType)
+       // Ugly special case necessary for StringExp's, where there are two GEP lines in a row, one of which is not associated with a load / store.
+       // example in variableCreation.s: %reg_41 = getelementptr %strobj* %reg_38, i32 0, i32 2
+     | GEP of (Flavor)
+       // The original type, the register we're converting, and the result type we want. Looks like: %reg_42 = ptrtoint %strobj* %reg_38 to i64
+     | PtrToInt of (FieldType * LLVM_Arg * FieldType)
+       // Used to put on tag bits. Looks like: %reg_43 = or i64 %reg_42, 1
+     | Or of (FieldType * LLVM_Arg * ActualNumber)
      
 
 and  NonRegProdInstr = 
@@ -95,6 +102,8 @@ and  Flavor =
      | StrObj0Ptr of (LLVM_Arg)
      | StrObj1Ptr of (LLVM_Arg)
      | StrObj2Ptr of (LLVM_Arg * int)
+       // something like: getelementptr([9 x i8]* @stringconst_0s, i64 0, i64 0). "[9 x i8]" is the Array FieldType. @tringconst_0s is the LLVM_Arg
+     | Array0Ptr of (FieldType, LLVM_Arg)
 (*
      | EframeParent
      | EFrameCount
