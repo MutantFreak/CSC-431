@@ -15,10 +15,10 @@ open TypeDef
 
 exception RuntimeError of string
 
-let GdoubleTable = ref Map.empty<double,int>
-let GstringTable = ref Map.empty<string,int>
-let GfunctionTable = ref Map.empty<(string * string list * exp * bool),int>
-let GfieldNameTable = ref Map.empty<string,int>
+let GdoubleTable = ref Map.empty<int,double>
+let GstringTable = ref Map.empty<int,string>
+let GfunctionTable = ref Map.empty<int,(string * string list * exp * bool)>
+let GfieldNameTable = ref Map.empty<int,string>
 
 //name of the register where our current eframe is stored
 let Geframe = ref ""
@@ -46,6 +46,64 @@ let getFreshStringName () =
     stringNameCounter := !stringNameCounter + 1
     newStringName
 
+let printHead () = 
+    printf "\n\
+\n\
+;; C helpers\n\
+\n\
+declare void @print_val(i64)\n\
+declare void @halt_with_error(i64,i64)\n\
+declare void @halt_with_error_noval(i64)\n\
+declare void @halt_with_error_firstword(i64,i64)\n\
+declare void @halt_with_error_int(i64,i64)\n\
+declare i64  @find_slot(%%slots*,i64)\n\
+declare i64  @try_to_set_slot(%%slots*,i64,i64)\n\
+declare void @ding()\n\
+declare void @print_int(i64)\n\
+\n\
+;; C primitives:\n\
+\n\
+declare i64 @equal_prim(i64,i64)\n\
+declare i64 @and_prim(i64,i64)\n\
+declare i64 @or_prim(i64,i64)\n\
+declare i64 @not_prim(i64)\n\
+declare i64 @print_prim(i64)\n\
+declare i64 @flexiplus_prim(i64,i64)\n\
+declare i64 @fleximinus_prim(i64,i64)\n\
+declare i64 @flexitimes_prim(i64,i64)\n\
+declare i64 @flexidivide_prim(i64,i64)\n\
+declare i64 @flexilessthan_prim(i64,i64)\n\
+declare i64 @flexigreaterthan_prim(i64,i64)\n\
+declare i64 @flexilessequalthan_prim(i64,i64)\n\
+declare i64 @flexigreaterequalthan_prim(i64,i64)\n\
+declare i64 @stringLength_prim(i64)\n\
+declare i64 @subString_prim(i64,i64,i64)\n\
+declare i64 @stringAppend_prim(i64,i64)\n\
+declare i64 @stringEqualHuh_prim(i64, i64)\n\
+declare i64 @stringLessThanHuh_prim(i64, i64)\n\
+declare i64 @stringHuh_prim(i64)\n\
+declare i64 @floatHuh_prim(i64)\n\
+declare i64 @plainHuh_prim(i64)\n\
+declare i64 @closureHuh_prim(i64)\n\
+declare i64 @instanceof_prim(i64,i64)\n\
+declare i64 @sqrt_prim(i64)\n\
+\n\
+;; the values in memory:\n\
+\n\
+%%obj =      type {i64, %%slots*} ;; (this works for any memory val other than floats)\n\
+%%closure =      type {i64, %%slots*, %%eframe*}\n\
+%%strobj   = type {i64, %%slots*, i8*}\n\
+%%floatobj = type {i64, float}\n\
+
+;; environments and slots:\n\
+\n\
+%%eframe = type {%%eframe*, i64, [0 x i64]}\n\
+%%slots = type {%%slots*, i64, i64}\n\
+\n\
+@empty_env = constant %%eframe undef\n\
+@empty_slots = constant %%slots undef\n\
+\n\
+%%packed_args = type {i64, [0 x i64]}\n\n"
 
 (* Function that takes in a frameOffset (how many frames to traverse) and a list of frameOffset sets of (gep & load) instrs.
    instrList is the existing instr list - it starts off as [].
@@ -250,21 +308,35 @@ let rec generate ourTree =
         | _ -> raise (RuntimeError (sprintf "Found an expression that is not supported: %A\n" ourTree))
 
 
-let wrapperGenerate ourTree table1 table2 table3 table4 = 
-    GdoubleTable := table1
-    GstringTable := table2
-    GfunctionTable := table3
-    GfieldNameTable := table4
-    
-    (*
-    let sdf = "function decalrations go here\n\n\n\n\n"
-    let funcBodies = go through function table & generate LLVM lines for the insides of functions
-    let defineLine = Define(I64, "@main", [(EFramePtr, "%env")])
-    let (bodyInstrs, resultReg) = generate ourTree
-    ((sdf :: randomFuncBodies :: defineLine :: bodyInstrs), resultReg)
-    *)
-    generate ourTree
-    
+let reverseMap theMap = 
+    let theList = Map.toList !theMap
+
+    let revList = ref []
+    for tuple in theList do
+        match tuple with
+            | (a, b) -> revList := (List.append !revList [(b,a)] )
+    let revMap = Map.ofList !revList
+    revMap
+
+let wrapperGenerate doubleT stringT functionT fieldT = 
+    //fill out the tables
+    GdoubleTable := reverseMap doubleT
+    GstringTable := reverseMap stringT
+    GfunctionTable := reverseMap functionT
+    GfieldNameTable := reverseMap fieldT
+    let llvmLines = ref []
+    let mainFinalReg = ref ""
+    let funList = Map.toList !GfunctionTable
+    for funEntry in funList do
+        match funEntry with
+            | (theInt : int, (theStr : string , theStrList : string list , theExp : exp , theBool : bool)) -> let (generatedLLVM, finalReg) = generate theExp
+                                                                                                              let defineLine = Define(I64, "@"+theStr, [(EFramePtr, "%env")])
+                                                                                                              llvmLines := (List.append !llvmLines [defineLine])
+                                                                                                              llvmLines := (List.append !llvmLines generatedLLVM)
+                                                                                                              if (theStr = "main")
+                                                                                                              then mainFinalReg := finalReg
+                                                                                                              else ()
+    (!llvmLines, !mainFinalReg)
 
 (* Function that takes a FieldType and returns its string representation. *)
 let rec printFieldType theField = 
@@ -321,7 +393,8 @@ let printFlavor gepType (leftReg : LLVM_Arg) =
         | StrObj0Ptr (argReg : LLVM_Arg) -> (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
         | StrObj1Ptr (argReg : LLVM_Arg) -> (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 1\n"
         | StrObj2Ptr (argReg : LLVM_Arg, index : int) -> (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 2, i64 " + (string index) + "\n"
-
+        | Array0Ptr (argType : FieldType, argReg : LLVM_Arg) -> sprintf "argType=%O argReg=%O" argType argReg
+        
 let printConditionCode code = 
     match code with
         | Eq -> "eq"
@@ -337,6 +410,12 @@ let printRegProdInstr instr resultRegister =
         | ICmp (code : ConditionCode, theType : FieldType, arg : LLVM_Arg, label : LLVM_Arg) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "icmp " + (printConditionCode code) + " " + (printFieldType theType) + " " + (printLLVM_Arg arg) + ", " +  (printLLVM_Arg label)
         | Malloc (theType : FieldType) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "malloc " + (printFieldType theType) + ", align 4" //%reg_34 = malloc {%eframe*, i64, [3 x i64]}, align 4
         | Bitcast (theType : FieldType, theArg : LLVM_Arg, theType2 : FieldType) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "bitcast " + (printFieldType theType) + " " + (printLLVM_Arg theArg) + " to " + (printFieldType theType2)
+        | GEP (getElementPtrFlavor : Flavor) -> sprintf "getElementPtrFlavor=%O" getElementPtrFlavor
+        //%reg_42 = ptrtoint %strobj* %reg_38 to i64
+        | PtrToInt (originalType : FieldType, originalReg : LLVM_Arg, resultType : FieldType) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "ptrtoint " + (printLLVM_Arg originalReg) + " " + (printFieldType resultType)
+        //%reg_43 = or i64 %reg_42, 1. 
+        | Or (theType : FieldType, argReg : LLVM_Arg, num : LLVM_Arg) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "or " + (printFieldType theType) + " " + (printLLVM_Arg argReg) + " " + (printLLVM_Arg num)
+
 
 (* Function that takes a non register producing instruction, and returns its string representation. *)
 let printNonRegProdInstr instr =
@@ -362,10 +441,11 @@ let printLLVMLine singleInstr =
         | RegProdLine (resultRegister : LLVM_Arg, producingInstr : RegProdInstr) -> (printRegProdInstr producingInstr resultRegister)
         | NonRegProdLine (nonProducingInstr) -> (printNonRegProdInstr nonProducingInstr)
         | Declare (theType: FieldType, name : string) -> "declare " + (printFieldType theType) + " " + name
-        | Define (theType : FieldType, name : string, paramsList: Param list) -> "define " + (printFieldType theType) + " " + name + " " + (sprintf "%O" paramsList )
+        | Define (theType : FieldType, name : string, paramsList: Param list) -> "define " + (printFieldType theType) + " " + name + " " + (sprintf "%O" paramsList ) + " {"
 
 (* Function that takes in an LLVM instruction list, and prints the string representation of each instruction. *)
 let printLLVM instrList =
+    printHead ()
     for eachInstr in instrList do
     printf "%O\n" (printLLVMLine eachInstr)
 

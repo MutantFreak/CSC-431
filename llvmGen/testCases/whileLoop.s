@@ -287,13 +287,16 @@ L_jump_to_readLine_prim_66:
 L_jump_to_sqrt_prim_67:
 	call void @halt_with_error_noval(i64 10) nounwind noreturn
 	unreachable
+	//actually a pointer
 L_regularcall_69:
 	%reg_18 = and i64 %fun_val, 3
 	%reg_19 = icmp eq i64 %reg_18, 1
 	br i1 %reg_19, label %L_72, label %L_73
+	//not pointer
 L_73:
 	call void @halt_with_error_int(i64 5,i64 %fun_val) nounwind noreturn
 	unreachable
+	//mask but the last thing, turn it into a pointer, load it, check the tag that it's a closure
 L_72:
 	%reg_20 = and i64 %fun_val, 18446744073709551612
 	%reg_21 = inttoptr i64 %reg_20 to %closure*
@@ -302,9 +305,11 @@ L_72:
 	%reg_24 = and i64 %reg_23, 3
 	%reg_25 = icmp eq i64 %reg_24, 0
 	br i1 %reg_25, label %L_74, label %L_75
+	// not a closure
 L_75:
 	call void @halt_with_error_firstword(i64 9,i64 %reg_23) nounwind noreturn
 	unreachable
+	//get the index from 
 L_74:
 	%reg_26 = getelementptr %closure* %reg_21, i32 0, i32 2
 	%reg_27 = load %eframe** %reg_26

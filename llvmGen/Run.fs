@@ -6,17 +6,7 @@ open AST2
 open TypeDef
 open Generator
 
-
-(* Testing function that generates the llvm instruction list, and prints it out. *)
-let testFunc () =
-    printf "in testFunc\n"
-    let declareLine = Declare(I64, "@add_prim")
-    let defineLine = Define(I64, "ourFunc", [])
-    //let inputAST = (IntExp 4)
-    let inputAST = PrimExp(PlusP, [IntExp 3; IntExp 5])
-    let (resultList, resultRegister) = generate inputAST
-    printLLVM (declareLine::(defineLine::resultList))
-
+// 
 
 (* Testing function that generates the llvm instruction list, and prints it out. *)
 let footleTest (str : string) =
@@ -38,28 +28,29 @@ let footleTest (str : string) =
     printf "functionTable=%A\n" functionTable
     printf "fieldNameTable=%A\n" fieldNameTable
 
-    printf "\nPrinting llvmGen result=======================\n"
+    printf "\nPrinting setup for llvmGen=======================\n"
     //convert the funbinding map to a list
     let funList = Map.toList !functionTable
     //reverse the list
     let revFunList = List.rev funList
     //convert the list into map
     //printf "revFunList=%O\n" revFunList
+    
     let ((theStr : string , theStrList : string list , theExp : exp , theBool : bool) , theInt : int) = (List.head revFunList)
     printf "theExp=%O\n" theExp
     //let fakeExp = BeginExp[SetExp (("lol", 0, 0), IntExp 5);]
     //printf "fakeExp=%O" fakeExp
-    let (generatedList, finalResultRegister) = (wrapperGenerate theExp !doubleTable !stringTable !functionTable !fieldNameTable)
-    //printf "generatedList=%O\n" generatedList
-    printf "finalResultRegister=%O\n" finalResultRegister
+    
+    printf "\nPrinting llvmGen result=======================\n"
+    let (generatedList, finalResultRegister) = (wrapperGenerate doubleTable stringTable functionTable fieldNameTable)
+    //printf "generatedList=%A\n" generatedList
+    printf "finalResultRegister=%A\n" finalResultRegister
+    printf "\n"
     printLLVM generatedList
 
-//(string * string list * exp * bool) * int
-//( ( ((frontFrameMap, count) as frontFrame), frameList) as ourSenv)
-//testFunc()
 
 //footleTest("../public/clements/footle-examples/test-1.footle")
 //footleTest("testCases/variableCreation.footle")
-footleTest("testCases/whileLoop2.footle")
+footleTest("testCases/whileLoop.footle")
 //footleTest("testCases/simpleFunction.footle")
 
