@@ -191,7 +191,8 @@ let rec generate ourTree =
          let (stringName, constName) = lookup in map (index of this string)
          let line5 = RegProdLine(store2ResultReg, Store(Array0Ptr(Array((stringLength stringName), I8), Constant(constName)), I8Ptr, gep3ResultReg, I8PtrPtr, gep2ResultReg, gep3ResultReg ))
          let line6 = RegProdLine(ptrToIntResultReg, PtrToInt(StrObjPtr, mallocResultReg, I64))
-         let line7 = RegProdLine(orResultReg, Or())
+             // Put on the tag bits for a string.
+         let line7 = RegProdLine(orResultReg, Or(I64, ptrToIntResultReg, ActualNumber(1)))
 
           // Shift theNum by 2 bits (multiply by 4) to make space for the tag, then add in a small number for the tag (i.e. 1 for the tag bits 01, or 2 for the tag bits 10)
           // want an equivalent of %r1 = add i64 theNum, 0

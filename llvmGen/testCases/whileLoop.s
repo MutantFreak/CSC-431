@@ -309,10 +309,11 @@ L_72:
 L_75:
 	call void @halt_with_error_firstword(i64 9,i64 %reg_23) nounwind noreturn
 	unreachable
-	//get the index from 
+	//get the index from it
 L_74:
 	%reg_26 = getelementptr %closure* %reg_21, i32 0, i32 2
 	%reg_27 = load %eframe** %reg_26
+     //one pair in brackets for every function you could jump to
 	switch i64 %reg_23, label %L_nomatch_71 [i64 0, label %L_jump_to_0_39 ]
 L_nomatch_71:
 	call void @halt_with_error(i64 3,i64 %reg_23) nounwind noreturn
@@ -320,11 +321,13 @@ L_nomatch_71:
 L_wrongnumargs_70:
 	call void @halt_with_error_noval(i64 4) nounwind noreturn
 	unreachable
+   // try to unpack the args, make sure thera re 0 of them. if ther aren't 0, jump to wrongnumargs.
 L_jump_to_0_39:
 	%reg_28 = getelementptr %packed_args* %args, i32 0, i32 0
 	%reg_29 = load i64* %reg_28
 	%reg_30 = icmp eq i64 %reg_29, 0
 	br i1 %reg_30, label %L_76, label %L_wrongnumargs_70
+   // get the closures eframe ptr, and call the method version of the function, and also pass in the "this" ptr.
 L_76:
 	%reg_31 = getelementptr %closure* %reg_21, i32 0, i32 2
 	%reg_32 = load %eframe** %reg_31
