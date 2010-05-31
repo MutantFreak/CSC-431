@@ -75,8 +75,8 @@ and  RegProdInstr =
      | GEP of (Flavor)
        // The original type, the register we're converting, and the result type we want. Looks like: %reg_42 = ptrtoint %strobj* %reg_38 to i64
      | PtrToInt of (FieldType * LLVM_Arg * FieldType)
-       // Used to put on tag bits. Looks like: %reg_43 = or i64 %reg_42, 1
-     | Or of (FieldType * LLVM_Arg * ActualNumber)
+       // Used to put on tag bits. The second LLVM_Arg should be an ActualNumber. Looks like: %reg_43 = or i64 %reg_42, 1. 
+     | Or of (FieldType * LLVM_Arg * LLVM_Arg)
      
 
 and  NonRegProdInstr = 
@@ -103,7 +103,7 @@ and  Flavor =
      | StrObj1Ptr of (LLVM_Arg)
      | StrObj2Ptr of (LLVM_Arg * int)
        // something like: getelementptr([9 x i8]* @stringconst_0s, i64 0, i64 0). "[9 x i8]" is the Array FieldType. @tringconst_0s is the LLVM_Arg
-     | Array0Ptr of (FieldType, LLVM_Arg)
+     | Array0Ptr of (FieldType * LLVM_Arg)
 (*
      | EframeParent
      | EFrameCount
