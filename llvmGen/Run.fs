@@ -50,7 +50,7 @@ let footleTest (str : string) =
 
 
 //footleTest("../public/clements/footle-examples/test-1.footle")
-//footleTest("testCases/variableCreation.footle")
-footleTest("testCases/whileLoop.footle")
+footleTest("testCases/variableCreation.footle")
+//footleTest("testCases/whileLoop.footle")
 //footleTest("testCases/simpleFunction.footle")
 

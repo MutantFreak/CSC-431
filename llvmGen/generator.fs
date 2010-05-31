@@ -394,10 +394,10 @@ let printFlavor gepType (leftReg : LLVM_Arg) =
         | Eframe0Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
         | Eframe1Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i64 0, i64 1\n"
         | Eframe2Ptr (argReg : LLVM_Arg, index : int) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i64 0, i64 2, i64 " + sprintf "%d" index + "\n"
-        | StrObj0Ptr (argReg : LLVM_Arg) -> (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
-        | StrObj1Ptr (argReg : LLVM_Arg) -> (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 1\n"
-        | StrObj2Ptr (argReg : LLVM_Arg) -> (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 2\n"
-        | Array0Ptr (argType : FieldType, argReg : LLVM_Arg) -> sprintf "argType=%O argReg=%O" argType argReg
+        | StrObj0Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
+        | StrObj1Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 1\n"
+        | StrObj2Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 2\n"
+        | Array0Ptr (argType : FieldType, argReg : LLVM_Arg) -> "\t" + sprintf "argType=%A argReg=%A\n" argType argReg
         
 let printConditionCode code = 
     match code with
@@ -414,7 +414,7 @@ let printRegProdInstr instr resultRegister =
         | ICmp (code : ConditionCode, theType : FieldType, arg : LLVM_Arg, label : LLVM_Arg) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "icmp " + (printConditionCode code) + " " + (printFieldType theType) + " " + (printLLVM_Arg arg) + ", " +  (printLLVM_Arg label)
         | Malloc (theType : FieldType) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "malloc " + (printFieldType theType) + ", align 4" //%reg_34 = malloc {%eframe*, i64, [3 x i64]}, align 4
         | Bitcast (theType : FieldType, theArg : LLVM_Arg, theType2 : FieldType) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "bitcast " + (printFieldType theType) + " " + (printLLVM_Arg theArg) + " to " + (printFieldType theType2)
-        | GEP (getElementPtrFlavor : Flavor) -> sprintf "getElementPtrFlavor=%O" getElementPtrFlavor
+        | GEP (getElementPtrFlavor : Flavor) -> "\tgetElementPtrFlavor=%A" getElementPtrFlavor
         //%reg_42 = ptrtoint %strobj* %reg_38 to i64
         | PtrToInt (originalType : FieldType, originalReg : LLVM_Arg, resultType : FieldType) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "ptrtoint " + (printLLVM_Arg originalReg) + " " + (printFieldType resultType)
         //%reg_43 = or i64 %reg_42, 1. 
@@ -447,9 +447,20 @@ let printLLVMLine singleInstr =
         | Declare (theType: FieldType, name : string) -> "declare " + (printFieldType theType) + " " + name
         | Define (theType : FieldType, name : string, paramsList: Param list) -> "define " + (printFieldType theType) + " " + name + " " + (sprintf "%O" paramsList ) + " {"
 
+//@stringconst_0s = internal constant [9 x i8] c"bogusVal\00"
+let printString () = 
+    let stringList = Map.toList !GstringTable
+    for stringEntry in stringList do
+        match stringEntry with
+            | (theInt : int, theStr : string) -> let strLen = String.length theStr + 1
+                                                 let theAnswer = "@stringconst_" + (sprintf "%ds = internal constant [%d x i8] c\"" theInt strLen) + theStr + "\\00\""
+                                                 printf "%s\n" theAnswer
+    printf "\n"
+
 (* Function that takes in an LLVM instruction list, and prints the string representation of each instruction. *)
 let printLLVM instrList =
     printHead ()
+    printString ()
     for eachInstr in instrList do
     printf "%O\n" (printLLVMLine eachInstr)
 
