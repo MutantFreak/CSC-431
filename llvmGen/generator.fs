@@ -135,7 +135,7 @@ let rec generate ourTree =
                                                                            %reg_51 = getelementptr %eframe* %reg_35, i32 0, i32 2, i32 1
 	                                                                        // load the i64 from the address in reg_51, into reg_52
 	                                                                        %reg_52 = load i64* %reg_51 *)
-                                                                        let loadInstr = RegProdLine(Register(loadResultReg), Load(Eframe2Ptr(traverseResultReg, fieldOffset), I64ptr, Register(gepReg)))
+                                                                        let loadInstr = RegProdLine(Register(loadResultReg), Load(Eframe2Ptr(traverseResultReg, fieldOffset), I64Ptr, Register(gepReg)))
                                                                         ((List.append traverseInstrList [loadInstr]), loadResultReg)
           // Generate an LLVM instruction that stores an i1 with 1 for true, 0 for false, into a fresh register.
         | BoolExp (value : bool) -> let newReg = getFreshRegister()
@@ -166,34 +166,34 @@ let rec generate ourTree =
             getelement ptr
             store double into 
 *)
-        | StringExp (index : int) -> printf "WARNING, StringExp IS BROKEN\n"
-                                     ([], "fakeRegister")
-(*        // remap the string table backwards so that it goes int -> string
-          // pull the string out of the table
-          let mallocResultReg = getFreshRegister()
-          let gep0ResultReg = getFreshRegister()
-          let store0ResultReg = getFreshRegister()
-          let gep1ResultReg = getFreshRegister()
-          let store1ResultReg = getFreshRegister()
-          let gep2ResultReg = getFreshRegister()
-          let store2ResultReg = getFreshRegister()
-          let gep3ResultReg = getFreshRegister()
-          let ptrToIntResultReg = getFreshRegister()
-          let orResultReg = getFreshRegister()
-
-         let line1 = RegProdLine(mallocResultReg, Malloc(StrObj))
-           %reg_38 = malloc %strobj, align 4
-	         // put a reference to the first field of the strobj into reg_39
-	         %reg_39 = getelementptr %strobj* %reg_38, i32 0, i32 0
-         let line2 = RegProdLine(store0ResultReg, Store(StrObj0Ptr(mallocResultReg), I64, ActualNumber(1), I64Ptr, gep0ResultReg, gep0ResultReg))
-         let line3 = RegProdLine(store1ResultReg, Store(StrObj1Ptr(mallocResultReg), SlotsPtr, Constant("@empty_slots"), SlotsPtrPtr, gep1ResultReg, gep1ResultReg))
-         let line4 = RegProdLine(gep2ResultReg, StrObjPtr(mallocResultReg))
-         let (stringName, constName) = lookup in map (index of this string)
-         let line5 = RegProdLine(store2ResultReg, Store(Array0Ptr(Array((stringLength stringName), I8), Constant(constName)), I8Ptr, gep3ResultReg, I8PtrPtr, gep2ResultReg, gep3ResultReg ))
-         let line6 = RegProdLine(ptrToIntResultReg, PtrToInt(StrObjPtr, mallocResultReg, I64))
-             // Put on the tag bits for a string.
-         let line7 = RegProdLine(orResultReg, Or(I64, ptrToIntResultReg, ActualNumber(1)))
-
+        | StringExp (index : int) -> (*printf "WARNING, StringExp IS BROKEN\n"
+                                     ([], "fakeRegister") *)
+                                     // remap the string table backwards so that it goes int -> string
+                                     // pull the string out of the table
+                                     let mallocResultReg = getFreshRegister()
+                                     let gep0ResultReg = getFreshRegister()
+                                     let gep1ResultReg = getFreshRegister()
+                                     let gep2ResultReg = getFreshRegister()
+                                     let gep3ResultReg = getFreshRegister()
+                                     let ptrToIntResultReg = getFreshRegister()
+                                     let orResultReg = getFreshRegister()
+                                     let line1 = RegProdLine(Register(mallocResultReg), Malloc(StrObj))
+                                        (*%reg_38 = malloc %strobj, align 4
+	                                     // put a reference to the first field of the strobj into reg_39
+	                                     %reg_39 = getelementptr %strobj* %reg_38, i32 0, i32 0
+                                        *)
+                                     let line2 = NonRegProdLine(Store(StrObj0Ptr(Register(mallocResultReg)), I64, ActualNumber(1), I64Ptr, Register(gep0ResultReg), Register(gep0ResultReg)))
+                                     let line3 = NonRegProdLine(Store(StrObj1Ptr(Register(mallocResultReg)), SlotsPtr, Constant("@empty_slots"), SlotsPtrPtr, Register(gep1ResultReg), Register(gep1ResultReg)))
+                                     let line4 = RegProdLine(Register(gep2ResultReg), GEP(StrObj2Ptr(Register(mallocResultReg))))
+                                     let constName = "@stringconst_" + (string index)
+                                         // let stringName = lookup in map (the index of this string)
+                                     let stringName = Map.find index !GstringTable
+                                     let line5 = NonRegProdLine(Store(Array0Ptr(Array((String.length stringName), I8), Constant(constName)), I8Ptr, Register(gep3ResultReg), I8PtrPtr, Register(gep2ResultReg), Register(gep3ResultReg) ))
+                                     let line6 = RegProdLine(Register(ptrToIntResultReg), PtrToInt(StrObjPtr, Register(mallocResultReg), I64))
+                                         // Put on the tag bits for a string.
+                                     let line7 = RegProdLine(Register(orResultReg), Or(I64, Register(ptrToIntResultReg), ActualNumber(1)))
+                                     ((line1 :: (line2 :: (line3 :: (line4 :: (line5 :: (line6 :: [line7])))))), orResultReg)
+(*
           // Shift theNum by 2 bits (multiply by 4) to make space for the tag, then add in a small number for the tag (i.e. 1 for the tag bits 01, or 2 for the tag bits 10)
           // want an equivalent of %r1 = add i64 theNum, 0
 *)
@@ -270,7 +270,7 @@ let rec generate ourTree =
         | SetExp ((varName : string, frameOffset : int, fieldOffset : int), theExp : exp) -> let freshReg = getFreshRegister()
                                                                                              printf "we found varName %O in a SetExp\n" varName
                                                                                              let (insideList, insideReg) = generate theExp
-                                                                                             let storeInst = NonRegProdLine(Store (Eframe2Ptr(Register(!Geframe), fieldOffset), I64, Register(insideReg), I64ptr, Register(freshReg), Register(freshReg)))
+                                                                                             let storeInst = NonRegProdLine(Store (Eframe2Ptr(Register(!Geframe), fieldOffset), I64, Register(insideReg), I64Ptr, Register(freshReg), Register(freshReg)))
                                                                                              (List.append insideList [storeInst], freshReg)
         | BeginExp (expList : exp list) -> match expList with
                                                // If there are no exp's in this begin, return the assembly equivalent of a voidV
@@ -303,7 +303,7 @@ let rec generate ourTree =
                                                                               let storeReg = getFreshRegister()
                                                                               let storeInst = NonRegProdLine(Store (Eframe0Ptr(Register(!Geframe)), EFramePtr, Register(!Genv), EFramePtrPtr, Register(storeReg), Register(storeReg)))
                                                                               let storeReg2 = getFreshRegister()
-                                                                              let storeInst2 = NonRegProdLine(Store (Eframe1Ptr(Register(!Geframe)), I64, ActualNumber(numOfVar), I64ptr, Register(storeReg2), Register(storeReg2)))
+                                                                              let storeInst2 = NonRegProdLine(Store (Eframe1Ptr(Register(!Geframe)), I64, ActualNumber(numOfVar), I64Ptr, Register(storeReg2), Register(storeReg2)))
                                                                               let (resultList, resultReg) = generate (theExp)
                                                                               (List.append [mallInstr; bitcastInstr; storeInst; storeInst2 ] resultList, resultReg)                          
         | _ -> raise (RuntimeError (sprintf "Found an expression that is not supported: %A\n" ourTree))
@@ -348,7 +348,7 @@ let rec printFieldType theField =
             | I8Ptr -> "i8*"
             | I8PtrPtr -> "i8**"
             | I64 -> "i64"
-            | I64ptr -> "i64*"
+            | I64Ptr -> "i64*"
             | EFramePtr -> "%eframe*"
             | EFramePtrPtr -> "%eframe**"
             | EFPtr_i64_Arr (index : int) -> "{%eframe*, i64, [" + sprintf "%d" index + " x i64]}"
@@ -361,6 +361,9 @@ let rec printFieldType theField =
             | ArrayPtrPtr -> "ArrayPtrPtr not yet supported."
             | Array (num : int, field : FieldType) -> "[" + string num + " x " + printFieldType field + "]"
             | StrObj -> "%strobj"
+            | StrObjPtr -> "%strobj*"
+            | SlotsPtr -> "%slots*"
+            | SlotsPtrPtr -> "%slots**"
         
 (* Function that takes an LLVM_Arg and returns its string representation. *)
 let printLLVM_Arg theArg = 
@@ -393,7 +396,7 @@ let printFlavor gepType (leftReg : LLVM_Arg) =
         | Eframe2Ptr (argReg : LLVM_Arg, index : int) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i64 0, i64 2, i64 " + sprintf "%d" index + "\n"
         | StrObj0Ptr (argReg : LLVM_Arg) -> (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
         | StrObj1Ptr (argReg : LLVM_Arg) -> (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 1\n"
-        | StrObj2Ptr (argReg : LLVM_Arg, index : int) -> (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 2, i64 " + (string index) + "\n"
+        | StrObj2Ptr (argReg : LLVM_Arg) -> (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 2\n"
         | Array0Ptr (argType : FieldType, argReg : LLVM_Arg) -> sprintf "argType=%O argReg=%O" argType argReg
         
 let printConditionCode code = 

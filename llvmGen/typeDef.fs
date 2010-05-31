@@ -15,7 +15,7 @@ type FieldType =
      | I8Ptr
      | I8PtrPtr
      | I64
-     | I64ptr
+     | I64Ptr
      | EFramePtr
      | EFramePtrPtr
      | EFPtr_i64_Arr of (int)
@@ -29,6 +29,9 @@ type FieldType =
        // eg. [9 x i8] or [0 x i64]
      | Array of (int * FieldType)
      | StrObj
+     | StrObjPtr
+     | SlotsPtr
+     | SlotsPtrPtr
 
 // Anywhere you can use a register, you can also use a number
 type LLVM_Arg =
@@ -101,8 +104,8 @@ and  Flavor =
      | Eframe2Ptr of (LLVM_Arg * int)
      | StrObj0Ptr of (LLVM_Arg)
      | StrObj1Ptr of (LLVM_Arg)
-     | StrObj2Ptr of (LLVM_Arg * int)
-       // something like: getelementptr([9 x i8]* @stringconst_0s, i64 0, i64 0). "[9 x i8]" is the Array FieldType. @tringconst_0s is the LLVM_Arg
+     | StrObj2Ptr of (LLVM_Arg)
+       // something like: getelementptr([9 x i8]* @stringconst_0s, i64 0, i64 0). "[9 x i8]" is the Array FieldType. @stringconst_0s is the LLVM_Arg
      | Array0Ptr of (FieldType * LLVM_Arg)
 (*
      | EframeParent
