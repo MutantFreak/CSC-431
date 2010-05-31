@@ -113,21 +113,27 @@ let rec generate ourTree =
 (*        // remap the string table backwards so that it goes int -> string
           // pull the string out of the table
           let mallocResultReg = getFreshRegister()
+          let gep0ResultReg = getFreshRegister()
           let store0ResultReg = getFreshRegister()
-          let reg3 = getFreshRegister()
-          let reg4 = getFreshRegister()
-          let reg5 = getFreshRegister()
-          let reg6 = getFreshRegister()
+          let gep1ResultReg = getFreshRegister()
+          let store1ResultReg = getFreshRegister()
+          let gep2ResultReg = getFreshRegister()
+          let store2ResultReg = getFreshRegister()
+          let gep3ResultReg = getFreshRegister()
+          let ptrToIntResultReg = getFreshRegister()
+          let orResultReg = getFreshRegister()
 
          let line1 = RegProdLine(mallocResultReg, Malloc(StrObj))
            %reg_38 = malloc %strobj, align 4
 	         // put a reference to the first field of the strobj into reg_39
 	         %reg_39 = getelementptr %strobj* %reg_38, i32 0, i32 0
-         let line2 = RegPodLine(store0ResultReg, Store(StrObj0Ptr(mallocResultReg), I64, Number(1), I64Ptr, gep0ResultReg, gep0ResultReg))
+         let line2 = RegProdLine(store0ResultReg, Store(StrObj0Ptr(mallocResultReg), I64, ActualNumber(1), I64Ptr, gep0ResultReg, gep0ResultReg))
          let line3 = RegProdLine(store1ResultReg, Store(StrObj1Ptr(mallocResultReg), SlotsPtr, Constant("@empty_slots"), SlotsPtrPtr, gep1ResultReg, gep1ResultReg))
-         let line2 = reg_2 = gep strobj 0 0
-         let line2 = store 1 reg_2
-         let line3 = 
+         let line4 = RegProdLine(gep2ResultReg, StrObjPtr(mallocResultReg))
+         let (stringName, constName) = lookup in map (index of this string)
+         let line5 = RegProdLine(store2ResultReg, Store(Array0Ptr(Array((stringLength stringName), I8), Constant(constName)), I8Ptr, gep3ResultReg, I8PtrPtr, gep2ResultReg, gep3ResultReg ))
+         let line6 = RegProdLine(ptrToIntResultReg, PtrToInt(StrObjPtr, mallocResultReg, I64))
+         let line7 = RegProdLine(orResultReg, Or())
 
           // Shift theNum by 2 bits (multiply by 4) to make space for the tag, then add in a small number for the tag (i.e. 1 for the tag bits 01, or 2 for the tag bits 10)
           // want an equivalent of %r1 = add i64 theNum, 0
