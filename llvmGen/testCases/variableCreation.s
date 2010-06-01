@@ -394,6 +394,7 @@ define i64 @main_0(%eframe* %env) {
 	%reg_48 = ptrtoint %floatobj* %reg_45 to i64
 	// add on the tag bits 01 to the int we just made and put it into reg_49
 	%reg_49 = or i64 %reg_48, 1
+      // Store the float.
 	// put a reference to field (2 1) within the eframe in reg_35, into reg_50
 	%reg_50 = getelementptr %eframe* %reg_35, i32 0, i32 2, i32 1
 	// put our int result (including tag bits) into index 1 of the 

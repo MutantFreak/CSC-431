@@ -153,36 +153,25 @@ let rec generate ourTree =
                                    let newNum = theNum * 4
                                    let newInstr = RegProdLine(Register(newReg), Add(I64, Number(newNum), Number(0)))
                                    ([newInstr], newReg)
-        | DoubleExp (index : int) -> printf "WARNING, DoubleExp IS BROKEN\n"
-                                     ([], "fakeRegister")
-(*          
-            let mallocResultReg = getFreshRegister()
-            let gep0ResultReg = getFreshRegister()
-            let gep1ResultReg = getFreshRegister()
-            let reg4 = getFreshRegister()
-            let reg5 = getFreshRegister()
-            let reg6 = getFreshRegister()
-            let reg7 = getFreshRegister()
-
-            let line1 = RegProdLine(Register(mallocResultReg), Malloc(FloatObj))
-            let line2 = NonRegProdLine(Store(FloatObj0Ptr(mallocResultReg), I64, ActualNumber(3), I64Ptr, gep0ResultReg, gep0ResultReg))
-
-            let line3 = NonRegProdLine(Store(FloatObj1Ptr(mallocResultReg), Float,  (# conversion here),     FloatPtr, gep1ResultReg, gep1ResultReg))
-            let line4 = 
-            let line5 = 
-            let line6 = 
-            let line7 = 
-            let line8 = 
-            let line9 = 
-
-
-            line1 :: line2 :: line3 :: line4 :: line5 :: line6 :: line7
-
-
-
-
-
-
+        | DoubleExp (index : int) -> (*printf "WARNING, DoubleExp IS BROKEN\n"
+                                     ([], "fakeRegister") *)
+                                     let mallocResultReg = getFreshRegister()
+                                     let gep0ResultReg = getFreshRegister()
+                                     let gep1ResultReg = getFreshRegister()
+                                     let ptrToIntReg = getFreshRegister()
+                                     let orResultReg = getFreshRegister()
+                                     let line1 = RegProdLine(Register(mallocResultReg), Malloc(FloatObj))
+                                     let line2 = NonRegProdLine(Store(FloatObj0Ptr(Register(mallocResultReg)), I64, ActualNumber(3), I64Ptr, Register(gep0ResultReg), Register(gep0ResultReg)))
+                                     let doubleVal = Map.find index !GdoubleTable
+                                         // Used from the google group.
+                                     let doubleBits = System.BitConverter.DoubleToInt64Bits(doubleVal);
+                                         // This will give and integer with the same bits as the double. To convert to a hex string:
+                                     let hexString = "0x" + doubleBits.ToString("X8") 
+                                     let line3 = NonRegProdLine(Store(FloatObj1Ptr(Register(mallocResultReg)), Float, Fptrunc(Double, hexString, Float), FloatPtr, Register(gep1ResultReg), Register(gep1ResultReg)))
+                                     let line4 = RegProdLine(Register(ptrToIntReg), PtrToInt(FloatObjPtr, Register(mallocResultReg), I64))
+                                     let line5 = RegProdLine(Register(orResultReg), Or(I64, Register(ptrToIntReg), ActualNumber(1)))
+                                     ((line1 :: (line2 :: (line3 :: (line4 :: [line5])))), orResultReg)
+(*
 // remap the double table backwards so that it goes int -> double
           // pull the double out of the table
             allocate 8 bytes for double.
@@ -370,6 +359,7 @@ let wrapperGenerate doubleT stringT functionT fieldT =
 (* Function that takes a FieldType and returns its string representation. *)
 let rec printFieldType theField = 
         match theField with
+            | Double -> "double"
             | F64 -> "f64"
             | I1 -> "i1"
             | I8 -> "i8"
@@ -395,6 +385,7 @@ let rec printFieldType theField =
             | Float -> "float"
             | FloatPtr -> "float*"
             | FloatObj -> "%floatobj"
+            | FloatObjPtr -> "%floatobj*"
         
 (* Function that takes an LLVM_Arg and returns its string representation. *)
 let printLLVM_Arg theArg = 
@@ -405,6 +396,8 @@ let printLLVM_Arg theArg =
         | GlobalLabel (theLabel : string) -> theLabel
         | ActualNumber (theNum : int) -> string (theNum)
         | Constant (name : string) -> name
+          // looks like: fptrunc(double 0x400921f9f01b866e to float)
+        | Fptrunc (firstFieldType : FieldType, bits : string, secondFieldType : FieldType) -> "fptrunc(" + (printFieldType firstFieldType) + " " + bits + " to " + (printFieldType secondFieldType) + ")"
 
 (* Function to print out an args list. first says whether or not this is the first argument, used to decide whether or not to put a comma in. *)
 let rec printArgsList (first:bool) argList =
@@ -421,17 +414,19 @@ let printFlavor gepType (leftReg : LLVM_Arg) =
     match gepType with
         | Eframe0 (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
         | Eframe1 (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe " + (printLLVM_Arg argReg) + ", i64 0, i64 1\n"
-        | Eframe2 (argReg : LLVM_Arg, index : int) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe " + (printLLVM_Arg argReg) + ", i64 0, i64 2, i64 " + sprintf "%d" index + "\n"
+        | Eframe2 (argReg : LLVM_Arg, index : int) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe " + (printLLVM_Arg argReg) + ", i64 0, i64 2, i64 " + (sprintf "%d" index) + "\n"
         | Eframe0Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
         | Eframe1Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i64 0, i64 1\n"
-        | Eframe2Ptr (argReg : LLVM_Arg, index : int) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i64 0, i64 2, i64 " + sprintf "%d" index + "\n"
+        | Eframe2Ptr (argReg : LLVM_Arg, index : int) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i64 0, i64 2, i64 " + (sprintf "%d" index) + "\n"
         | StrObj0Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
         | StrObj1Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 1\n"
         | StrObj2Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 2"
         //getelementptr([9 x i8]* @stringconst_0s, i64 0, i64 0)
         | Array0Ptr (argType : FieldType, argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr (" + (printFieldType argType) + "* " + (printLLVM_Arg argReg) + " i64 0, i64 0\n"
-        (* should look like: %reg_46 = getelementptr %floatobj* %reg_45, i32 0, i32 0
-        | FloatObj0Ptr () -> *)
+        (* should look like: %reg_46 = getelementptr %floatobj* %reg_45, i32 0, i32 0 *)
+        | FloatObj0Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %floatobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
+        | FloatObj1Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %floatobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 1\n"
+        | FloatObj2Ptr (argReg : LLVM_Arg, index : int) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %floatobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 2, i64 " + (sprintf "%d" index) + "\n"
         
 let printConditionCode code = 
     match code with
