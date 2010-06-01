@@ -32,6 +32,9 @@ type FieldType =
      | StrObjPtr
      | SlotsPtr
      | SlotsPtrPtr
+     | Float
+     | FloatPtr
+     | FloatObj
 
 // Anywhere you can use a register, you can also use a number
 type LLVM_Arg =
@@ -41,6 +44,9 @@ type LLVM_Arg =
      | GlobalLabel of string
      | ActualNumber of int
      | Constant of string
+       // Another ugly hack, this one is necessary to deal with floats
+       // should look like: fptrunc(double 0x400921f9f01b866e to float)
+     | Fptrunc of (FieldType * string * FieldType)
 
 type ConditionCode =
      | Eq
@@ -107,6 +113,7 @@ and  Flavor =
      | StrObj2Ptr of (LLVM_Arg)
        // something like: getelementptr([9 x i8]* @stringconst_0s, i64 0, i64 0). "[9 x i8]" is the Array FieldType. @stringconst_0s is the LLVM_Arg
      | Array0Ptr of (FieldType * LLVM_Arg)
+     | FloatObj0Ptr of (LLVM_Arg)
 (*
      | EframeParent
      | EFrameCount

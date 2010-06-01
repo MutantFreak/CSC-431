@@ -155,7 +155,35 @@ let rec generate ourTree =
                                    ([newInstr], newReg)
         | DoubleExp (index : int) -> printf "WARNING, DoubleExp IS BROKEN\n"
                                      ([], "fakeRegister")
-(*        // remap the double table backwards so that it goes int -> double
+(*          
+            let mallocResultReg = getFreshRegister()
+            let gep0ResultReg = getFreshRegister()
+            let gep1ResultReg = getFreshRegister()
+            let reg4 = getFreshRegister()
+            let reg5 = getFreshRegister()
+            let reg6 = getFreshRegister()
+            let reg7 = getFreshRegister()
+
+            let line1 = RegProdLine(Register(mallocResultReg), Malloc(FloatObj))
+            let line2 = NonRegProdLine(Store(FloatObj0Ptr(mallocResultReg), I64, ActualNumber(3), I64Ptr, gep0ResultReg, gep0ResultReg))
+
+            let line3 = NonRegProdLine(Store(FloatObj1Ptr(mallocResultReg), Float,  (# conversion here),     FloatPtr, gep1ResultReg, gep1ResultReg))
+            let line4 = 
+            let line5 = 
+            let line6 = 
+            let line7 = 
+            let line8 = 
+            let line9 = 
+
+
+            line1 :: line2 :: line3 :: line4 :: line5 :: line6 :: line7
+
+
+
+
+
+
+// remap the double table backwards so that it goes int -> double
           // pull the double out of the table
             allocate 8 bytes for double.
             put the double @ given ptr location
@@ -364,6 +392,9 @@ let rec printFieldType theField =
             | StrObjPtr -> "%strobj*"
             | SlotsPtr -> "%slots*"
             | SlotsPtrPtr -> "%slots**"
+            | Float -> "float"
+            | FloatPtr -> "float*"
+            | FloatObj -> "%floatobj"
         
 (* Function that takes an LLVM_Arg and returns its string representation. *)
 let printLLVM_Arg theArg = 
@@ -399,6 +430,8 @@ let printFlavor gepType (leftReg : LLVM_Arg) =
         | StrObj2Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 2"
         //getelementptr([9 x i8]* @stringconst_0s, i64 0, i64 0)
         | Array0Ptr (argType : FieldType, argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr (" + (printFieldType argType) + "* " + (printLLVM_Arg argReg) + " i64 0, i64 0\n"
+        (* should look like: %reg_46 = getelementptr %floatobj* %reg_45, i32 0, i32 0
+        | FloatObj0Ptr () -> *)
         
 let printConditionCode code = 
     match code with
