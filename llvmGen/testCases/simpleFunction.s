@@ -158,26 +158,40 @@ L_jump_to_sqrt_prim_30:
 	call void @halt_with_error_noval(i64 10) nounwind noreturn
 	unreachable
 L_regularcall_32:
+   // and on the bits 3 (11) to isolate the bottom
+   // throw away everything but the bottom 2 bits
 	%reg_2 = and i64 %fun_val, 3
+   // check if the bottom two bits were 01 (a pointer?)
 	%reg_3 = icmp eq i64 %reg_2, 1
+   // if they were, go to L_35, if not, go to L_36 (failure)
 	br i1 %reg_3, label %L_35, label %L_36
 L_36:
 	call void @halt_with_error_int(i64 5,i64 %fun_val) nounwind noreturn
 	unreachable
 L_35:
+   // acquire everything but the bottom two bits, which get turned to 0's.
 	%reg_4 = and i64 %fun_val, 18446744073709551612
+   // turn it into a closure
 	%reg_5 = inttoptr i64 %reg_4 to %closure*
+   // get a reference to the first field of the closuer and put it into reg_6
 	%reg_6 = getelementptr %closure* %reg_5, i32 0, i32 0
+   // pull the result out of that address and put it in reg_7
 	%reg_7 = load i64* %reg_6
+   // Throw away everything but the bottom two bits again
 	%reg_8 = and i64 %reg_7, 3
+   // make sure the bottom two bits are 00 (a function?)
 	%reg_9 = icmp eq i64 %reg_8, 0
+   // if the bottom two bits were 00, go to L_37, otherwise go to L_38 (failure)
 	br i1 %reg_9, label %L_37, label %L_38
 L_38:
 	call void @halt_with_error_firstword(i64 9,i64 %reg_7) nounwind noreturn
 	unreachable
 L_37:
+   // get field 2 out of the closure and put it into reg_10
 	%reg_10 = getelementptr %closure* %reg_5, i32 0, i32 2
+   // load the eframe out of reg_10
 	%reg_11 = load %eframe** %reg_10
+   // jump to labels for the actual functions.
 	switch i64 %reg_7, label %L_nomatch_34 [i64 4, label %L_jump_to_1_1 i64 0, label %L_jump_to_0_2 ]
 L_nomatch_34:
 	call void @halt_with_error(i64 3,i64 %reg_7) nounwind noreturn
@@ -185,6 +199,7 @@ L_nomatch_34:
 L_wrongnumargs_33:
 	call void @halt_with_error_noval(i64 4) nounwind noreturn
 	unreachable
+// Label for function 1 (main)
 L_jump_to_1_1:
 	%reg_12 = getelementptr %packed_args* %args, i32 0, i32 0
 	%reg_13 = load i64* %reg_12
@@ -195,6 +210,7 @@ L_39:
 	%reg_16 = load %eframe** %reg_15
 	%reg_17 = call i64 @main_1(%eframe* %reg_16)
 	ret i64 %reg_17
+// Label for function 2 (our testFunction)
 L_jump_to_0_2:
 	%reg_18 = getelementptr %packed_args* %args, i32 0, i32 0
 	%reg_19 = load i64* %reg_18
@@ -300,40 +316,26 @@ L_jump_to_sqrt_prim_70:
 	call void @halt_with_error_noval(i64 10) nounwind noreturn
 	unreachable
 L_regularcall_72:
-   // and on the bits 3 (11) to isolate the bottom
-   // throw away everything but the bottom 2 bits
 	%reg_26 = and i64 %fun_val, 3
-   // check if the bottom two bits were 01 (a pointer?)
 	%reg_27 = icmp eq i64 %reg_26, 1
-   // if they were, go to L_75, if not, go to L_76 (failure)
 	br i1 %reg_27, label %L_75, label %L_76
 L_76:
 	call void @halt_with_error_int(i64 5,i64 %fun_val) nounwind noreturn
 	unreachable
 L_75:
-   // acquire everything but the bottom two bits, which get turned to 0's.
 	%reg_28 = and i64 %fun_val, 18446744073709551612
-   // turn it into a closure
 	%reg_29 = inttoptr i64 %reg_28 to %closure*
-   // get a reference to the first field of the closuer and puti t into reg_30
 	%reg_30 = getelementptr %closure* %reg_29, i32 0, i32 0
-   // pull the result out of that address and put it in reg_31
 	%reg_31 = load i64* %reg_30
-   // Throw away everything but the bottom two bits again
 	%reg_32 = and i64 %reg_31, 3
-   // make sure the bottom two bits are 00 (a function?)
 	%reg_33 = icmp eq i64 %reg_32, 0
-   // if the bottom two bits were 00, go to L_77, otherwise go to L_88 (failure)
 	br i1 %reg_33, label %L_77, label %L_78
 L_78:
 	call void @halt_with_error_firstword(i64 9,i64 %reg_31) nounwind noreturn
 	unreachable
 L_77:
-   // get field 2 out of the closure and put it into reg_34
 	%reg_34 = getelementptr %closure* %reg_29, i32 0, i32 2
-   // load the eframe out of reg_34
 	%reg_35 = load %eframe** %reg_34
-   // jump to labels for the actual functions.
 	switch i64 %reg_31, label %L_nomatch_74 [i64 4, label %L_jump_to_1_41 i64 0, label %L_jump_to_0_42 ]
 L_nomatch_74:
 	call void @halt_with_error(i64 3,i64 %reg_31) nounwind noreturn
@@ -341,7 +343,6 @@ L_nomatch_74:
 L_wrongnumargs_73:
 	call void @halt_with_error_noval(i64 4) nounwind noreturn
 	unreachable
-//label for function 1 (main)
 L_jump_to_1_41:
 	%reg_36 = getelementptr %packed_args* %args, i32 0, i32 0
 	%reg_37 = load i64* %reg_36
@@ -352,7 +353,6 @@ L_79:
 	%reg_40 = load %eframe** %reg_39
 	%reg_41 = call i64 @main_1m(%eframe* %reg_40,i64 %obj)
 	ret i64 %reg_41
-// label for function 2 (our testFunction)
 L_jump_to_0_42:
 	%reg_42 = getelementptr %packed_args* %args, i32 0, i32 0
 	%reg_43 = load i64* %reg_42
