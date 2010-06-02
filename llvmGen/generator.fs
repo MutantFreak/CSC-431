@@ -117,8 +117,7 @@ let rec traverseEframes frameOffset instrList frameWereIn = let loadResultRegist
                                                             else let newInstr = RegProdLine(Register(loadResultRegister), Load(Eframe0Ptr(frameWereIn), EFramePtrPtr, Register(gepResultRegister)))
                                                                  ((List.append instrList [newInstr]), Register(loadResultRegister))
 
-(* Function that takes in an AST2, and the existing list of LLVM instructions, and returns a new list of LLVM instructions, 
-   tupled with a register where the result is stored *)
+(* Function that takes in an AST2, and returns a new list of LLVM instructions, tupled with a register where the result is stored *)
 let rec generate ourTree =
     match ourTree with
         //get the list of llvm instructions to traverse eframes until frameOffset decrements to 0
@@ -153,9 +152,7 @@ let rec generate ourTree =
                                    let newNum = theNum * 4
                                    let newInstr = RegProdLine(Register(newReg), Add(I64, Number(newNum), Number(0)))
                                    ([newInstr], newReg)
-        | DoubleExp (index : int) -> (*printf "WARNING, DoubleExp IS BROKEN\n"
-                                     ([], "fakeRegister") *)
-                                     let mallocResultReg = getFreshRegister()
+        | DoubleExp (index : int) -> let mallocResultReg = getFreshRegister()
                                      let gep0ResultReg = getFreshRegister()
                                      let gep1ResultReg = getFreshRegister()
                                      let ptrToIntReg = getFreshRegister()
@@ -172,7 +169,6 @@ let rec generate ourTree =
                                      let line5 = RegProdLine(Register(orResultReg), Or(I64, Register(ptrToIntReg), ActualNumber(1)))
                                      ((line1 :: (line2 :: (line3 :: (line4 :: [line5])))), orResultReg)
 (*
-// remap the double table backwards so that it goes int -> double
           // pull the double out of the table
             allocate 8 bytes for double.
             put the double @ given ptr location
@@ -183,9 +179,7 @@ let rec generate ourTree =
             getelement ptr
             store double into 
 *)
-        | StringExp (index : int) -> (*printf "WARNING, StringExp IS BROKEN\n"
-                                     ([], "fakeRegister") *)
-                                     // remap the string table backwards so that it goes int -> string
+        | StringExp (index : int) -> // remap the string table backwards so that it goes int -> string
                                      // pull the string out of the table
                                      let mallocResultReg = getFreshRegister()
                                      let gep0ResultReg = getFreshRegister()

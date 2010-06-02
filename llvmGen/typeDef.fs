@@ -59,6 +59,9 @@ type Param = (FieldType * string)
                         // could be a Register or a number
 type Arg = (FieldType * LLVM_Arg)
 
+                 // Label, FieldType
+//type SwitchArg = (LLVM_Line)
+
 type LLVM_Line =
      | Label of string
        // This is the register where the result is being stored, along with the producing instruction that makes the result.
@@ -100,6 +103,7 @@ and  NonRegProdInstr =
      | UnconditionalBr of (string)
        // Looks like ret i64 %r3
      | Ret of (FieldType * LLVM_Arg)
+//     | Switch of ()
 
 // These are all the different types of getelementptr's. Each of them has implicit field types + numbers based off their names.
 and  Flavor =
