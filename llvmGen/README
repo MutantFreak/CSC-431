@@ -2,13 +2,15 @@ Tag Bits:
 00 - int
 01 - double
 10 - bool or void
+11 - pointer
 110 - bool
 0110 - false bool
 1110 - true bool
 010 - void
 
-
+  ** = we don't care / know about those bits. we're talking about the next 2 bits above the **.
 01** - string (Clements)
+10** - closure (our decision)
 
 Things we're unsure about:
 In variableCreation.s, why do we do this? We store the number 1 into the first i64 field of the strobj
