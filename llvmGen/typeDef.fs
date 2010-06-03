@@ -73,6 +73,7 @@ type LLVM_Line =
      | Declare of (FieldType * string)
        //Fieldtype with a GlobalLabel, with a param list
      | Define of (FieldType * string * Param list)
+     | CloseBracket
 
 and  RegProdInstr = 
        // Load is always a getelementptr of some flavor, followed by a load.

@@ -345,6 +345,7 @@ let wrapperGenerate doubleT stringT functionT fieldT =
                                                                                                               let defineLine = Define(I64, "@"+theStr, [(EFramePtr, "%env")])
                                                                                                               llvmLines := (List.append !llvmLines [defineLine])
                                                                                                               llvmLines := (List.append !llvmLines generatedLLVM)
+                                                                                                              llvmLines := (List.append !llvmLines [CloseBracket])
                                                                                                               if (theStr = "main")
                                                                                                               then mainFinalReg := finalReg
                                                                                                               else ()
@@ -393,6 +394,10 @@ let printLLVM_Arg theArg =
           // looks like: fptrunc(double 0x400921f9f01b866e to float)
         | Fptrunc (firstFieldType : FieldType, bits : string, secondFieldType : FieldType) -> "fptrunc(" + (printFieldType firstFieldType) + " " + bits + " to " + (printFieldType secondFieldType) + ")"
 
+let printParam param = 
+    match param with
+        | (theType : FieldType, theStr : string) -> (printFieldType theType) + " " + theStr
+
 (* Function to print out an args list. first says whether or not this is the first argument, used to decide whether or not to put a comma in. *)
 let rec printArgsList (first:bool) argList =
     match argList with
@@ -426,6 +431,12 @@ let printConditionCode code =
     match code with
         | Eq -> "eq"
         | Ne -> "ne"
+
+let printParamsList paramList = 
+    let answer = ref ""
+    for param in paramList do
+        answer := !answer + (printParam param)
+    !answer
 
 (* Function that takes a register producing instruction, and returns its string representation. *)
 let printRegProdInstr instr resultRegister =
@@ -468,7 +479,8 @@ let printLLVMLine singleInstr =
         | RegProdLine (resultRegister : LLVM_Arg, producingInstr : RegProdInstr) -> (printRegProdInstr producingInstr resultRegister)
         | NonRegProdLine (nonProducingInstr) -> (printNonRegProdInstr nonProducingInstr)
         | Declare (theType: FieldType, name : string) -> "declare " + (printFieldType theType) + " " + name
-        | Define (theType : FieldType, name : string, paramsList: Param list) -> "define " + (printFieldType theType) + " " + name + " " + (sprintf "%O" paramsList ) + " {"
+        | Define (theType : FieldType, name : string, paramsList: Param list) -> "define " + (printFieldType theType) + " " + name + " (" + (printParamsList paramsList ) + ") {"
+        | CloseBracket -> "}"
 
 //@stringconst_0s = internal constant [9 x i8] c"bogusVal\00"
 let printString () = 
