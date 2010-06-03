@@ -37,6 +37,8 @@ type FieldType =
      | FloatPtr
      | FloatObj
      | FloatObjPtr
+     | PackedArgsPtr
+     | Void
 
 // Anywhere you can use a register, you can also use a number
 type LLVM_Arg =
@@ -74,6 +76,7 @@ type LLVM_Line =
        //Fieldtype with a GlobalLabel, with a param list
      | Define of (FieldType * string * Param list)
      | CloseBracket
+     | Unreachable
 
 and  RegProdInstr = 
        // Load is always a getelementptr of some flavor, followed by a load.
@@ -90,8 +93,10 @@ and  RegProdInstr =
      | GEP of (Flavor)
        // The original type, the register we're converting, and the result type we want. Looks like: %reg_42 = ptrtoint %strobj* %reg_38 to i64
      | PtrToInt of (FieldType * LLVM_Arg * FieldType)
+     | IntToPtr of (FieldType * LLVM_Arg * FieldType)
        // Used to put on tag bits. The second LLVM_Arg should be an ActualNumber. Looks like: %reg_43 = or i64 %reg_42, 1. 
      | Or of (FieldType * LLVM_Arg * LLVM_Arg)
+     | And of (FieldType * LLVM_Arg * LLVM_Arg)
      
 
 and  NonRegProdInstr = 
@@ -104,6 +109,9 @@ and  NonRegProdInstr =
      | UnconditionalBr of (string)
        // Looks like ret i64 %r3
      | Ret of (FieldType * LLVM_Arg)
+       // Yet ANOTHER ugly hack, due to the late-discovered fact that call can be either a register producing instruction, or a non-register producing instruction.
+       // Looks like: call void @halt_with_error_int(i64 5,i64 %fun_val) nounwind noreturn
+     | AloneCall of (FieldType * string * Arg list)
 //     | Switch of ()
 
 // These are all the different types of getelementptr's. Each of them has implicit field types + numbers based off their names.
@@ -123,6 +131,7 @@ and  Flavor =
      | FloatObj0Ptr of (LLVM_Arg)
      | FloatObj1Ptr of (LLVM_Arg)
      | FloatObj2Ptr of (LLVM_Arg * int)
+     | Closure0Ptr of (LLVM_Arg)
 (*
      | EframeParent
      | EFrameCount

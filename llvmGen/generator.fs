@@ -117,6 +117,52 @@ let rec traverseEframes frameOffset instrList frameWereIn = let loadResultRegist
                                                             else let newInstr = RegProdLine(Register(loadResultRegister), Load(Eframe0Ptr(frameWereIn), EFramePtrPtr, Register(gepResultRegister)))
                                                                  ((List.append instrList [newInstr]), Register(loadResultRegister))
 
+let generatefunctionDispatch = // First line should look like: define i64 @fun_dispatch(i64 %fun_val,%packed_args* %args)
+                               (*
+                                   // the string "%fun_val" is used very often so I made it a variable
+                               let funVal = "%fun_val"
+                               let and1ResultReg = getFreshRegister()
+                               let icmp1ResultReg = getFreshRegister()
+                               let and2ResultReg = getFreshRegister()
+                               let intToPtr1ResultReg = getFreshRegister()
+                               let load1ResultReg = getFreshRegister()
+                               let gep1ResultReg = getFreshRegister()
+                               let and3ResultReg = getFreshRegister()
+                               let reg8 = getFreshRegister()
+                               let reg9 = getFreshRegister()
+
+                               let success1 = getFreshLabel()
+                               let fail1 = getFreshLabel()
+                               let label3 = getFreshLabel()
+                               let label4 = getFreshLabel()
+                               let label5 = getFreshLabel()
+                               let label6 = getFreshLabel()
+                               let label7 = getFreshLabel()
+
+                               let line1 = Define(I64, "@fun_dispatch", ((I64, funVal), (PackedArgsPtr, "%args")))
+                               let line2 = RegProdLine(Register(and1ResultReg), And(I64, Register(funVal), ActualNumber(3)))
+                                           // The #3 here is for the lower bits 11 for a pointer.
+                               let line3 = RegProdLine(Register(icmp1ResultReg), Icmp(Eq, I64, Register(and1ResultReg), ActualNumber(3))) 
+                               let line4 = NonRegProdLine(Br(Register(icmp1ResultReg), GlobalLabel(success1), GlobalLabel(fail1) ))
+                               let line5 = Label(fail1)
+                               let line6 = NonRegProdLine(AloneCall(Void, "@halt_with_error_int", ((I64, ActualNumber(5)), (I64, Register(funVal))) ))
+                               let line7 = Unreachable
+                               let line8 = Label(success1)
+                                           // 18446744073709551612 is a number to mask out the bottom two bits
+                               let line9 = RegProdLine(Register(and2ResultReg), And(I64, Register(funVal), ActualNumber(18446744073709551612)))
+                               let line10 = RegProdLine(Register(intToPtr1ResultReg), IntToPtr(I64, Register(and2ResultReg), ClosurePtr))
+                               let line11 = RegProdLine(Register(load1ResultReg), Load(Closure0Ptr(Register(intToPtr1ResultReg)), I64Ptr, Register(gep1ResultReg), Register(gep1ResultReg)))
+                                            // The #3 here is for the lower bits 11, in order to mask them off
+                               let line13 = RegProdLine(Register(and3ResultReg), I64, Register(load1ResultReg), ActualNumber(3))
+                               let line13 = 
+                               let line14 = 
+                               let line15 = 
+                               let line16 = 
+                               let line17 = 
+
+                               (line1 :: line2 :: line3 :: line4 :: line5 :: line6 :: line7 :: line8 :: line9, ___register)
+                               *)
+
 (* Function that takes in an AST2, and returns a new list of LLVM instructions, tupled with a register where the result is stored *)
 let rec generate ourTree =
     match ourTree with
@@ -381,6 +427,8 @@ let rec printFieldType theField =
             | FloatPtr -> "float*"
             | FloatObj -> "%floatobj"
             | FloatObjPtr -> "%floatobj*"
+            | PackedArgsPtr -> "%packed_args*"
+            | Void -> "void"
         
 (* Function that takes an LLVM_Arg and returns its string representation. *)
 let printLLVM_Arg theArg = 
@@ -451,8 +499,10 @@ let printRegProdInstr instr resultRegister =
         | GEP (getElementPtrFlavor : Flavor) -> (printFlavor getElementPtrFlavor resultRegister)
         //%reg_42 = ptrtoint %strobj* %reg_38 to i64
         | PtrToInt (originalType : FieldType, originalReg : LLVM_Arg, resultType : FieldType) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "ptrtoint " + (printFieldType originalType) + " " + (printLLVM_Arg originalReg) + " to " + (printFieldType resultType)
+        | IntToPtr (originalType : FieldType, originalReg : LLVM_Arg, resultType : FieldType) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "inttoptr " + (printFieldType originalType) + " " + (printLLVM_Arg originalReg) + " to " + (printFieldType resultType)s
         //%reg_43 = or i64 %reg_42, 1. 
         | Or (theType : FieldType, argReg : LLVM_Arg, num : LLVM_Arg) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "or " + (printFieldType theType) + " " + (printLLVM_Arg argReg) + ", " + (printLLVM_Arg num)
+        | And (theType : FieldType, argReg : LLVM_Arg, num : LLVM_Arg) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "and " + (printFieldType theType) + " " + (printLLVM_Arg argReg) + ", " + (printLLVM_Arg num)
 
 
 (* Function that takes a non register producing instruction, and returns its string representation. *)
@@ -466,6 +516,7 @@ let printNonRegProdInstr instr =
         | Br (boolReg : LLVM_Arg, trueLabel : string, falseLabel : string) -> "\t" + "br i1 " + (printLLVM_Arg boolReg) + ", label %" + trueLabel + ", label %" + falseLabel
         | UnconditionalBr (label : string) -> "\t" + "br label %" + label
         | Ret (theType : FieldType, resultReg : LLVM_Arg) -> "\t" + "ret " + (printFieldType theType) + " " + (printLLVM_Arg resultReg)
+        | AloneCall (theType : FieldType, name : string, argsList : Arg list) -> "\t" + "call " + (printFieldType theType) + " " + name + "(" + (printArgsList true argsList) + ") nounwind noreturn\n"
 
 (* Branch should look like this:
    br i1 %cond, label %IfEqual, label %IfUnequal
@@ -480,6 +531,7 @@ let printLLVMLine singleInstr =
         | NonRegProdLine (nonProducingInstr) -> (printNonRegProdInstr nonProducingInstr)
         | Declare (theType: FieldType, name : string) -> "declare " + (printFieldType theType) + " " + name
         | Define (theType : FieldType, name : string, paramsList: Param list) -> "define " + (printFieldType theType) + " " + name + " (" + (printParamsList paramsList ) + ") {"
+        | Unreachable -> "unreachable"
         | CloseBracket -> "}"
 
 //@stringconst_0s = internal constant [9 x i8] c"bogusVal\00"
