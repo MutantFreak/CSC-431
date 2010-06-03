@@ -61,8 +61,8 @@ type Param = (FieldType * string)
                         // could be a Register or a number
 type Arg = (FieldType * LLVM_Arg)
 
-                 // Label, FieldType
-//type SwitchArg = (LLVM_Line)
+                 // The type of the number, the ActualNumber (offset number into function table for this function), and the label to go to for it
+type Case = (FieldType * LLVM_Arg * LLVM_Arg)
 
 type LLVM_Line =
      | Label of string
@@ -112,7 +112,9 @@ and  NonRegProdInstr =
        // Yet ANOTHER ugly hack, due to the late-discovered fact that call can be either a register producing instruction, or a non-register producing instruction.
        // Looks like: call void @halt_with_error_int(i64 5,i64 %fun_val) nounwind noreturn
      | AloneCall of (FieldType * string * Arg list)
-//     | Switch of ()
+       // Looks like: switch i64 %reg_7, label %L_nomatch_34 [i64 4, label %L_jump_to_1_1 i64 0, label %L_jump_to_0_2 ]
+       // The FieldType of the value being switched on, the value being switched, the fall through Label, and the Case list
+     | Switch of (FieldType * LLVM_Arg * LLVM_Arg * Case list)
 
 // These are all the different types of getelementptr's. Each of them has implicit field types + numbers based off their names.
 and  Flavor =

@@ -117,7 +117,7 @@ let rec traverseEframes frameOffset instrList frameWereIn = let loadResultRegist
                                                             else let newInstr = RegProdLine(Register(loadResultRegister), Load(Eframe0Ptr(frameWereIn), EFramePtrPtr, Register(gepResultRegister)))
                                                                  ((List.append instrList [newInstr]), Register(loadResultRegister))
 
-let generatefunctionDispatch = // First line should look like: define i64 @fun_dispatch(i64 %fun_val,%packed_args* %args)
+let generatefunctionDispatch = ()// First line should look like: define i64 @fun_dispatch(i64 %fun_val,%packed_args* %args)
                                (*
                                    // the string "%fun_val" is used very often so I made it a variable
                                let funVal = "%fun_val"
@@ -468,6 +468,12 @@ let rec printArgsList (first:bool) argList =
                                                             then (printFieldType theType) + " " + (printLLVM_Arg theArg) + (printArgsList false rest)
                                                             else ", " + (printFieldType theType) + " " + (printLLVM_Arg theArg) + (printArgsList false rest)
 
+(* Function to print out a Case list. first says whether or not this is the first argument, used to decide whether or not to put a comma in. *)
+let rec printCaseList caseList =
+    match caseList with
+        | [] -> ""
+        | (theType : FieldType, offsetArg : LLVM_Arg, labelArg : LLVM_Arg)::rest -> (printFieldType theType) + " " + (printLLVM_Arg offsetArg) + ", " + (printLLVM_Arg labelArg) + " " + (printCaseList rest)
+
 (* Takes in the type of flavor, and the register the instruction is being put into *)
 let printFlavor gepType (leftReg : LLVM_Arg) = 
     match gepType with
@@ -486,6 +492,8 @@ let printFlavor gepType (leftReg : LLVM_Arg) =
         | FloatObj0Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %floatobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
         | FloatObj1Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %floatobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 1\n"
         | FloatObj2Ptr (argReg : LLVM_Arg, index : int) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %floatobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 2, i64 " + (sprintf "%d" index) + "\n"
+        | Closure0Ptr (argReg: LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %closure* " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
+        | Closure2Ptr (argReg: LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %closure* " + (printLLVM_Arg argReg) + ", i64 0, i64 2\n"
         
 let printConditionCode code = 
     match code with
@@ -511,7 +519,7 @@ let printRegProdInstr instr resultRegister =
         | GEP (getElementPtrFlavor : Flavor) -> (printFlavor getElementPtrFlavor resultRegister)
         //%reg_42 = ptrtoint %strobj* %reg_38 to i64
         | PtrToInt (originalType : FieldType, originalReg : LLVM_Arg, resultType : FieldType) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "ptrtoint " + (printFieldType originalType) + " " + (printLLVM_Arg originalReg) + " to " + (printFieldType resultType)
-        | IntToPtr (originalType : FieldType, originalReg : LLVM_Arg, resultType : FieldType) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "inttoptr " + (printFieldType originalType) + " " + (printLLVM_Arg originalReg) + " to " + (printFieldType resultType)s
+        | IntToPtr (originalType : FieldType, originalReg : LLVM_Arg, resultType : FieldType) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "inttoptr " + (printFieldType originalType) + " " + (printLLVM_Arg originalReg) + " to " + (printFieldType resultType)
         //%reg_43 = or i64 %reg_42, 1. 
         | Or (theType : FieldType, argReg : LLVM_Arg, num : LLVM_Arg) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "or " + (printFieldType theType) + " " + (printLLVM_Arg argReg) + ", " + (printLLVM_Arg num)
         | And (theType : FieldType, argReg : LLVM_Arg, num : LLVM_Arg) -> "\t" + (printLLVM_Arg resultRegister) + " = " + "and " + (printFieldType theType) + " " + (printLLVM_Arg argReg) + ", " + (printLLVM_Arg num)
@@ -529,6 +537,7 @@ let printNonRegProdInstr instr =
         | UnconditionalBr (label : string) -> "\t" + "br label %" + label
         | Ret (theType : FieldType, resultReg : LLVM_Arg) -> "\t" + "ret " + (printFieldType theType) + " " + (printLLVM_Arg resultReg)
         | AloneCall (theType : FieldType, name : string, argsList : Arg list) -> "\t" + "call " + (printFieldType theType) + " " + name + "(" + (printArgsList true argsList) + ") nounwind noreturn\n"
+        | Switch (theType : FieldType, switchVal : LLVM_Arg, fallThroughLabel : LLVM_Arg, caseList : Case list) -> "\t" + "switch " + (printFieldType theType) + " " + (printLLVM_Arg switchVal) + ", label " + (printLLVM_Arg fallThroughLabel) + " [" + (printCaseList caseList) + "]\n"
 
 (* Branch should look like this:
    br i1 %cond, label %IfEqual, label %IfUnequal
