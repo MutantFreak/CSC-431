@@ -128,13 +128,19 @@ let generatefunctionDispatch = // First line should look like: define i64 @fun_d
                                let load1ResultReg = getFreshRegister()
                                let gep1ResultReg = getFreshRegister()
                                let and3ResultReg = getFreshRegister()
-                               let reg8 = getFreshRegister()
-                               let reg9 = getFreshRegister()
+                               let icmp2ResultReg = getFreshRegister()
+                               let load2Resultreg = getFreshRegister()
+                               let reg10 = getFreshRegister()
+                               let reg11 = getFreshRegister()
+                               let reg12 = getFreshRegister()
+                               let reg13 = getFreshRegister()
+                               let reg14 = getFreshRegister()
+                               let reg15 = getFreshRegister()
 
-                               let success1 = getFreshLabel()
-                               let fail1 = getFreshLabel()
-                               let label3 = getFreshLabel()
-                               let label4 = getFreshLabel()
+                               let success1Label = getFreshLabel()
+                               let fail1Label = getFreshLabel()
+                               let success2Label = getFreshLabel()
+                               let fail2Label = getFreshLabel()
                                let label5 = getFreshLabel()
                                let label6 = getFreshLabel()
                                let label7 = getFreshLabel()
@@ -143,22 +149,28 @@ let generatefunctionDispatch = // First line should look like: define i64 @fun_d
                                let line2 = RegProdLine(Register(and1ResultReg), And(I64, Register(funVal), ActualNumber(3)))
                                            // The #3 here is for the lower bits 11 for a pointer.
                                let line3 = RegProdLine(Register(icmp1ResultReg), Icmp(Eq, I64, Register(and1ResultReg), ActualNumber(3))) 
-                               let line4 = NonRegProdLine(Br(Register(icmp1ResultReg), GlobalLabel(success1), GlobalLabel(fail1) ))
-                               let line5 = Label(fail1)
+                               let line4 = NonRegProdLine(Br(Register(icmp1ResultReg), GlobalLabel(success1Label), GlobalLabel(fail1Label) ))
+                               let line5 = Label(fail1Label)
                                let line6 = NonRegProdLine(AloneCall(Void, "@halt_with_error_int", ((I64, ActualNumber(5)), (I64, Register(funVal))) ))
                                let line7 = Unreachable
-                               let line8 = Label(success1)
+                               let line8 = Label(success1Label)
                                            // 18446744073709551612 is a number to mask out the bottom two bits
                                let line9 = RegProdLine(Register(and2ResultReg), And(I64, Register(funVal), ActualNumber(18446744073709551612)))
                                let line10 = RegProdLine(Register(intToPtr1ResultReg), IntToPtr(I64, Register(and2ResultReg), ClosurePtr))
                                let line11 = RegProdLine(Register(load1ResultReg), Load(Closure0Ptr(Register(intToPtr1ResultReg)), I64Ptr, Register(gep1ResultReg), Register(gep1ResultReg)))
                                             // The #3 here is for the lower bits 11, in order to mask them off
-                               let line13 = RegProdLine(Register(and3ResultReg), I64, Register(load1ResultReg), ActualNumber(3))
-                               let line13 = 
-                               let line14 = 
-                               let line15 = 
-                               let line16 = 
-                               let line17 = 
+                               let line13 = RegProdLine(Register(and3ResultReg), And(I64, Register(load1ResultReg), ActualNumber(3)))
+                               let line13 = RegProdLine(Register(icmp2ResultReg), Icmp(Eq, I64, Register(and3ResultReg), ActualNumber(0)))
+                                            // If the bottom two bits were 00, go to success2, otherwise go to fail2
+                               let line14 = NonRegProdLine(Br(Register(icmp2ResultReg), GlobalLabel(success2Label), GlobalLabel(fail2Label)))
+                               let line15 = Label(fail2Label)
+                               let line16 = NonRegProdLine(AloneCall(Void, "@halt_with_error_firstword", ((I64, ActualNumber(9)), (I64, Register(load1ResultReg))) ))
+                               let line17 = Unreachable
+                               let line18 = Label(success2Label)
+                               let line19 = RegProdLine(Register(load2ResultReg), Load(Closure2Ptr(intToPtrResultReg), EFramePtrPtr, Register(gep2ResultReg), Register(gep2ResultReg)))
+                               let line20 = 
+                               let line21 = 
+                               let line22 = 
 
                                (line1 :: line2 :: line3 :: line4 :: line5 :: line6 :: line7 :: line8 :: line9, ___register)
                                *)

@@ -8,9 +8,9 @@ Tag Bits:
 1110 - true bool
 010 - void
 
-  ** = we don't care / know about those bits. we're talking about the next 2 bits above the **.
-01** - string (Clements)
-10** - closure (our decision)
+  * The bottom two bits here must be 11 since we're talking about types of pointers. We're interested in the next 2 bits above the 11.
+0111 - string (Clements)
+1011 - closure (our decision)
 
 Things we're unsure about:
 In variableCreation.s, why do we do this? We store the number 1 into the first i64 field of the strobj
