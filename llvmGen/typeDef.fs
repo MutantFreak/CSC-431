@@ -23,6 +23,7 @@ type FieldType =
      | EFPtr_i64Ptr_Arr of (int)
      | EFPtr_i64_Arr_Ptr of (int)
      | EFPtr_i64Ptr_Arr_Ptr of (int)
+     | Closure
      | ClosurePtr
      | ClosurePtrPtr
      | ArrayPtr
@@ -135,6 +136,7 @@ and  Flavor =
      | FloatObj2Ptr of (LLVM_Arg * int)
      | Closure0Ptr of (LLVM_Arg)
      | Closure2Ptr of (LLVM_Arg)
+     | PackedArgs0Ptr of (LLVM_Arg)
 (*
      | EframeParent
      | EFrameCount
