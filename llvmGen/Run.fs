@@ -6,10 +6,11 @@ open AST2
 open TypeDef
 open Generator
 
-// 
+exception NumArgs of string
+
 
 (* Testing function that generates the llvm instruction list, and prints it out. *)
-let footleTest (str : string) =
+let runFootle (str : string) =
     
     //printf "\nPrinting source=======================\n"
     let buffer = new System.IO.StreamReader(str)
@@ -36,8 +37,14 @@ let footleTest (str : string) =
     printLLVM generatedList
 
 
-//footleTest("../public/clements/footle-examples/test-1.footle")
-//footleTest("testCases/variableCreation.footle")
-//footleTest("testCases/whileLoop.footle")
-footleTest("testCases/simpleFunction.footle")
+//runFootle("../public/clements/footle-examples/test-1.footle")
+//runFootle("testCases/variableCreation.footle")
+//runFootle("testCases/whileLoop.footle")
+//runFootle("testCases/simpleFunction.footle")
+
+let args = System.Environment.GetCommandLineArgs ()
+if((Array.length args) = 1)
+then raise (NumArgs (sprintf "wrong number of args\n"))
+runFootle((Array.get args 1))
+
 
