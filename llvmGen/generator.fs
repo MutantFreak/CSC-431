@@ -117,8 +117,27 @@ let rec traverseEframes frameOffset instrList frameWereIn = let loadResultRegist
                                                             else let newInstr = RegProdLine(Register(loadResultRegister), Load(Eframe0Ptr(frameWereIn), EFramePtrPtr, Register(gepResultRegister)))
                                                                  ((List.append instrList [newInstr]), Register(loadResultRegister))
 
-let generatefunctionDispatch = ()// First line should look like: define i64 @fun_dispatch(i64 %fun_val,%packed_args* %args)
-                               (*
+let generateCaseCode ourFunc = ()
+
+let generateFunSwitch loadResultReg = ()
+                                      // convert the table of functions into a list format so we can iterate over each of them
+                                      let functionList = Map.toList !GfunctionTable
+                                      // the label to be used in all of the functions for what happens if there's the wrong # of args.
+                                      let wrongNumArgsLabel = getFreshLabel()
+                                      let instrList = ref []                                      
+
+                                      for eachFun in functionList do
+                                          printf "printing: %A\n\n" eachFun //generateCaseCode eachFun
+                                      (!instrList, "generateFunSwitch is BROKEN")
+(*
+                                      // generate the list of cases
+                                      let cases = 
+                                      let fallThroughLabel = getFreshLabel()
+                                      let switchLine = NonRegProdLine(Switch(I64, Register(loadResultReg), GlobalLabel(fallThroughLabel), cases))
+*)
+
+
+let generatefunctionDispatch = // First line should look like: define i64 @fun_dispatch(i64 %fun_val,%packed_args* %args)
                                    // the string "%fun_val" is used very often so I made it a variable
                                let funVal = "%fun_val"
                                let and1ResultReg = getFreshRegister()
@@ -129,51 +148,43 @@ let generatefunctionDispatch = ()// First line should look like: define i64 @fun
                                let gep1ResultReg = getFreshRegister()
                                let and3ResultReg = getFreshRegister()
                                let icmp2ResultReg = getFreshRegister()
-                               let load2Resultreg = getFreshRegister()
-                               let reg10 = getFreshRegister()
-                               let reg11 = getFreshRegister()
-                               let reg12 = getFreshRegister()
-                               let reg13 = getFreshRegister()
-                               let reg14 = getFreshRegister()
-                               let reg15 = getFreshRegister()
+                               let load2ResultReg = getFreshRegister()
+                               let gep2ResultReg = getFreshRegister()
 
                                let success1Label = getFreshLabel()
                                let fail1Label = getFreshLabel()
                                let success2Label = getFreshLabel()
                                let fail2Label = getFreshLabel()
                                let label5 = getFreshLabel()
-                               let label6 = getFreshLabel()
-                               let label7 = getFreshLabel()
 
-                               let line1 = Define(I64, "@fun_dispatch", ((I64, funVal), (PackedArgsPtr, "%args")))
+                               let line1 = Define(I64, "@fun_dispatch", [(I64, funVal); (PackedArgsPtr, "%args")])
                                let line2 = RegProdLine(Register(and1ResultReg), And(I64, Register(funVal), ActualNumber(3)))
                                            // The #3 here is for the lower bits 11 for a pointer.
-                               let line3 = RegProdLine(Register(icmp1ResultReg), Icmp(Eq, I64, Register(and1ResultReg), ActualNumber(3))) 
-                               let line4 = NonRegProdLine(Br(Register(icmp1ResultReg), GlobalLabel(success1Label), GlobalLabel(fail1Label) ))
+                               let line3 = RegProdLine(Register(icmp1ResultReg), ICmp(Eq, I64, Register(and1ResultReg), ActualNumber(3))) 
+                               let line4 = NonRegProdLine(Br(Register(icmp1ResultReg), success1Label, fail1Label ))
                                let line5 = Label(fail1Label)
-                               let line6 = NonRegProdLine(AloneCall(Void, "@halt_with_error_int", ((I64, ActualNumber(5)), (I64, Register(funVal))) ))
+                               let line6 = NonRegProdLine(AloneCall(Void, "@halt_with_error_int", [(I64, ActualNumber(5)); (I64, Register(funVal))] ))
                                let line7 = Unreachable
                                let line8 = Label(success1Label)
-                                           // 18446744073709551612 is a number to mask out the bottom two bits
-                               let line9 = RegProdLine(Register(and2ResultReg), And(I64, Register(funVal), ActualNumber(18446744073709551612)))
+                                           // 18446744073709551612 is a number to mask out the bottom two bits & leave everything else unchanged. 4294967292
+                                           // 2147483644 is 2^31 -1. Not 2^32 b/c of a signed bit on the int. The -1 is to make it within the allowable range.
+                               let line9 = RegProdLine(Register(and2ResultReg), And(I64, Register(funVal), ActualNumber(2147483644)))
                                let line10 = RegProdLine(Register(intToPtr1ResultReg), IntToPtr(I64, Register(and2ResultReg), ClosurePtr))
-                               let line11 = RegProdLine(Register(load1ResultReg), Load(Closure0Ptr(Register(intToPtr1ResultReg)), I64Ptr, Register(gep1ResultReg), Register(gep1ResultReg)))
+                               let line11 = RegProdLine(Register(load1ResultReg), Load(Closure0Ptr(Register(intToPtr1ResultReg)), I64Ptr, Register(gep1ResultReg)))
                                             // The #3 here is for the lower bits 11, in order to mask them off
-                               let line13 = RegProdLine(Register(and3ResultReg), And(I64, Register(load1ResultReg), ActualNumber(3)))
-                               let line13 = RegProdLine(Register(icmp2ResultReg), Icmp(Eq, I64, Register(and3ResultReg), ActualNumber(0)))
+                               let line12 = RegProdLine(Register(and3ResultReg), And(I64, Register(load1ResultReg), ActualNumber(3)))
+                               let line13 = RegProdLine(Register(icmp2ResultReg), ICmp(Eq, I64, Register(and3ResultReg), ActualNumber(0)))
                                             // If the bottom two bits were 00, go to success2, otherwise go to fail2
-                               let line14 = NonRegProdLine(Br(Register(icmp2ResultReg), GlobalLabel(success2Label), GlobalLabel(fail2Label)))
+                               let line14 = NonRegProdLine(Br(Register(icmp2ResultReg), success2Label, fail2Label ))
                                let line15 = Label(fail2Label)
-                               let line16 = NonRegProdLine(AloneCall(Void, "@halt_with_error_firstword", ((I64, ActualNumber(9)), (I64, Register(load1ResultReg))) ))
+                               let line16 = NonRegProdLine(AloneCall(Void, "@halt_with_error_firstword", [(I64, ActualNumber(9)); (I64, Register(load1ResultReg))] ))
                                let line17 = Unreachable
                                let line18 = Label(success2Label)
-                               let line19 = RegProdLine(Register(load2ResultReg), Load(Closure2Ptr(intToPtrResultReg), EFramePtrPtr, Register(gep2ResultReg), Register(gep2ResultReg)))
-                               let line20 = 
-                               let line21 = 
-                               let line22 = 
+                               let line19 = RegProdLine(Register(load2ResultReg), Load(Closure2Ptr(Register(intToPtr1ResultReg)), EFramePtrPtr, Register(gep2ResultReg)))
+                               let (switchLines, switchResultReg) = generateFunSwitch load1ResultReg
+                               let line20 = CloseBracket
+                               (line1 :: line2 :: line3 :: line4 :: line5 :: line6 :: line7 :: line8 :: line9 :: line10 :: line11 :: line12 :: line13 :: line14 :: line15 :: line16 :: line17 :: line18 :: line19 :: (List.append switchLines [line20]), switchResultReg)
 
-                               (line1 :: line2 :: line3 :: line4 :: line5 :: line6 :: line7 :: line8 :: line9, ___register)
-                               *)
 
 (* Function that takes in an AST2, and returns a new list of LLVM instructions, tupled with a register where the result is stored *)
 let rec generate ourTree =
@@ -426,8 +437,8 @@ let rec printFieldType theField =
             | EFPtr_i64Ptr_Arr (index : int) -> "{%eframe*, i64*, [" + sprintf "%d" index + " x i64]}"
             | EFPtr_i64_Arr_Ptr (index : int) -> "{%eframe*, i64, [" + sprintf "%d" index + " x i64]}*"  //{%eframe*, i64, [_ x i64]}*
             | EFPtr_i64Ptr_Arr_Ptr (index : int) -> "{%eframe*, i64*, [" + sprintf "%d" index + " x i64]}*"
-            | CloPtr -> "%closure*"
-            | CloPtrPtr -> "%closure**"
+            | ClosurePtr -> "%closure*"
+            | ClosurePtrPtr -> "%closure**"
             | ArrayPtr -> "ArrayPtr not yet supported."
             | ArrayPtrPtr -> "ArrayPtrPtr not yet supported."
             | Array (num : int, field : FieldType) -> "[" + string num + " x " + printFieldType field + "]"
@@ -477,23 +488,23 @@ let rec printCaseList caseList =
 (* Takes in the type of flavor, and the register the instruction is being put into *)
 let printFlavor gepType (leftReg : LLVM_Arg) = 
     match gepType with
-        | Eframe0 (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
-        | Eframe1 (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe " + (printLLVM_Arg argReg) + ", i64 0, i64 1\n"
-        | Eframe2 (argReg : LLVM_Arg, index : int) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe " + (printLLVM_Arg argReg) + ", i64 0, i64 2, i64 " + (sprintf "%d" index) + "\n"
-        | Eframe0Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
-        | Eframe1Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i64 0, i64 1\n"
-        | Eframe2Ptr (argReg : LLVM_Arg, index : int) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i64 0, i64 2, i64 " + (sprintf "%d" index) + "\n"
-        | StrObj0Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
-        | StrObj1Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 1\n"
-        | StrObj2Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 2"
-        //getelementptr([9 x i8]* @stringconst_0s, i64 0, i64 0)
-        | Array0Ptr (argType : FieldType, argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr (" + (printFieldType argType) + "* " + (printLLVM_Arg argReg) + " i64 0, i64 0\n"
+        | Eframe0 (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe " + (printLLVM_Arg argReg) + ", i32 0, i32 0\n"
+        | Eframe1 (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe " + (printLLVM_Arg argReg) + ", i32 0, i32 1\n"
+        | Eframe2 (argReg : LLVM_Arg, index : int) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe " + (printLLVM_Arg argReg) + ", i32 0, i32 2, i32 " + (sprintf "%d" index) + "\n"
+        | Eframe0Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i32 0, i32 0\n"
+        | Eframe1Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i32 0, i32 1\n"
+        | Eframe2Ptr (argReg : LLVM_Arg, index : int) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %eframe* " + (printLLVM_Arg argReg) + ", i32 0, i32 2, i32 " + (sprintf "%d" index) + "\n"
+        | StrObj0Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i32 0, i32 0\n"
+        | StrObj1Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i32 0, i32 1\n"
+        | StrObj2Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %strobj* " + (printLLVM_Arg argReg) + ", i32 0, i32 2"
+        //getelementptr([9 x i8]* @stringconst_0s, i32 0, i32 0)
+        | Array0Ptr (argType : FieldType, argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr (" + (printFieldType argType) + "* " + (printLLVM_Arg argReg) + " i32 0, i32 0\n"
         (* should look like: %reg_46 = getelementptr %floatobj* %reg_45, i32 0, i32 0 *)
-        | FloatObj0Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %floatobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
-        | FloatObj1Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %floatobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 1\n"
-        | FloatObj2Ptr (argReg : LLVM_Arg, index : int) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %floatobj* " + (printLLVM_Arg argReg) + ", i64 0, i64 2, i64 " + (sprintf "%d" index) + "\n"
-        | Closure0Ptr (argReg: LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %closure* " + (printLLVM_Arg argReg) + ", i64 0, i64 0\n"
-        | Closure2Ptr (argReg: LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %closure* " + (printLLVM_Arg argReg) + ", i64 0, i64 2\n"
+        | FloatObj0Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %floatobj* " + (printLLVM_Arg argReg) + ", i32 0, i32 0\n"
+        | FloatObj1Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %floatobj* " + (printLLVM_Arg argReg) + ", i32 0, i32 1\n"
+        | FloatObj2Ptr (argReg : LLVM_Arg, index : int) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %floatobj* " + (printLLVM_Arg argReg) + ", i32 0, i32 2, i32 " + (sprintf "%d" index) + "\n"
+        | Closure0Ptr (argReg: LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %closure* " + (printLLVM_Arg argReg) + ", i32 0, i32 0\n"
+        | Closure2Ptr (argReg: LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %closure* " + (printLLVM_Arg argReg) + ", i32 0, i32 2\n"
         
 let printConditionCode code = 
     match code with

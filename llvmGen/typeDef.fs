@@ -23,8 +23,8 @@ type FieldType =
      | EFPtr_i64Ptr_Arr of (int)
      | EFPtr_i64_Arr_Ptr of (int)
      | EFPtr_i64Ptr_Arr_Ptr of (int)
-     | CloPtr
-     | CloPtrPtr
+     | ClosurePtr
+     | ClosurePtrPtr
      | ArrayPtr
      | ArrayPtrPtr
        // eg. [9 x i8] or [0 x i64]
