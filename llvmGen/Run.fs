@@ -25,22 +25,9 @@ let footleTest (str : string) =
     let (doubleTable,stringTable,functionTable,fieldNameTable) = (StaticPass.transform lex)
     //printf "doubleTable=%A\n" doubleTable
     //printf "stringTable=%A\n" stringTable
-    //printf "functionTable=%A\n" functionTable
+    printf "functionTable=%A\n" functionTable
     //printf "fieldNameTable=%A\n" fieldNameTable
 
-    //printf "\nPrinting setup for llvmGen=======================\n"
-    //convert the funbinding map to a list
-    let funList = Map.toList !functionTable
-    //reverse the list
-    let revFunList = List.rev funList
-    //convert the list into map
-    //printf "revFunList=%O\n" revFunList
-    
-    let ((theStr : string , theStrList : string list , theExp : exp , theBool : bool) , theInt : int) = (List.head revFunList)
-    //printf "theExp=%O\n" theExp
-    //let fakeExp = BeginExp[SetExp (("lol", 0, 0), IntExp 5);]
-    //printf "fakeExp=%O" fakeExp
-    
     //printf "\nPrinting llvmGen result=======================\n"
     let (generatedList, finalResultRegister) = (wrapperGenerate doubleTable stringTable functionTable fieldNameTable)
     //printf "generatedList=%A\n" generatedList
@@ -50,7 +37,7 @@ let footleTest (str : string) =
 
 
 //footleTest("../public/clements/footle-examples/test-1.footle")
-footleTest("testCases/variableCreation.footle")
+//footleTest("testCases/variableCreation.footle")
 //footleTest("testCases/whileLoop.footle")
-//footleTest("testCases/simpleFunction.footle")
+footleTest("testCases/simpleFunction.footle")
 

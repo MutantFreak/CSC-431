@@ -25,6 +25,7 @@ let Geframe = ref ""
 let Genv = ref "%env"
 
 let registerCounter = ref 1;
+let functionCounter = ref 0;
 let labelCounter = ref 1;
 let stringNameCounter = ref 1;
 
@@ -430,9 +431,36 @@ let rec generate ourTree =
         | FieldSetExp of (exp * int * exp)
         | MethodCallExp of (exp * int * exp list)
         | NewExp of (exp * exp list)
-        | AppExp of (exp * exp list)
-        | CloExp of (string * int) 
 *)
+        | AppExp (theExp : exp, expList : exp list) -> ([],"fake register")
+
+
+(*	
+  %reg_54 = malloc %closure, align 4
+  %reg_55 = getelementptr %closure* %reg_54, i32 0, i32 0
+  store i64 0, i64* %reg_55
+  %reg_56 = getelementptr %closure* %reg_54, i32 0, i32 1
+  store %slots* @empty_slots, %slots** %reg_56
+  %reg_57 = getelementptr %closure* %reg_54, i32 0, i32 2
+  store %eframe* %reg_51, %eframe** %reg_57
+  %reg_58 = ptrtoint %closure* %reg_54 to i64
+  %reg_59 = or i64 %reg_58, 1
+*)
+        | CloExp (theStr : string, index : int) -> let mallocReg1 = getFreshRegister()
+                                                   let mallInstr = RegProdLine(Register(mallocReg1), Malloc(Closure))
+                                                   let geteleptr1 = getFreshRegister()
+                                                   let storeInstr1 = NonRegProdLine(Store (Closure0Ptr(Register(mallocReg1)), I64, ActualNumber(0), I64Ptr, Register(geteleptr1), Register(geteleptr1)))
+                                                   let geteleptr2 = getFreshRegister()
+                                                   let storeInstr2 = NonRegProdLine(Store (Closure1Ptr(Register(mallocReg1)), SlotsPtr, Constant("@empty_slots"), SlotsPtrPtr, Register(geteleptr2), Register(geteleptr2)))
+                                                   let geteleptr3 = getFreshRegister()
+                                                   let storeInstr3 = NonRegProdLine(Store (Closure2Ptr(Register(mallocReg1)), EFramePtr, Register(!Geframe), EFramePtrPtr, Register(geteleptr3), Register(geteleptr3)))
+                                                   let ptrtointReg = getFreshRegister()
+                                                   //PtrToInt of (FieldType * LLVM_Arg * FieldType)
+                                                   let ptrtointInstr = RegProdLine(Register(ptrtointReg), PtrToInt(ClosurePtr, Register(mallocReg1), I64))
+                                                   let orReg = getFreshRegister()
+                                                   let orInstr = RegProdLine(Register(orReg), Or(I64, Register(ptrtointReg), ActualNumber(1)))
+                                                   ([mallInstr; storeInstr1; storeInstr2; storeInstr3; ptrtointInstr; orInstr], ptrtointReg)
+
         | ScopeExp (numOfVar : int, paramList : string list, theExp : exp) -> let mallocReg = getFreshRegister()
                                                                               let mallInstr = RegProdLine(Register(mallocReg), Malloc(EFPtr_i64_Arr(numOfVar)))
                                                                               let bitcastReg = getFreshRegister()
@@ -469,7 +497,8 @@ let wrapperGenerate doubleT stringT functionT fieldT =
     for funEntry in funList do
         match funEntry with
             | (theInt : int, (theStr : string , theStrList : string list , theExp : exp , theBool : bool)) -> let (generatedLLVM, finalReg) = generate theExp
-                                                                                                              let defineLine = Define(I64, "@"+theStr, [(EFramePtr, "%env")])
+                                                                                                              let defineLine = Define(I64, "@"+theStr + (sprintf "_%d" !functionCounter) , [(EFramePtr, "%env")])
+                                                                                                              functionCounter := !functionCounter + 1
                                                                                                               llvmLines := (List.append !llvmLines [defineLine])
                                                                                                               llvmLines := (List.append !llvmLines generatedLLVM)
                                                                                                               llvmLines := (List.append !llvmLines [CloseBracket])
@@ -563,6 +592,7 @@ let printFlavor gepType (leftReg : LLVM_Arg) =
         | FloatObj1Ptr (argReg : LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %floatobj* " + (printLLVM_Arg argReg) + ", i32 0, i32 1\n"
         | FloatObj2Ptr (argReg : LLVM_Arg, index : int) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %floatobj* " + (printLLVM_Arg argReg) + ", i32 0, i32 2, i32 " + (sprintf "%d" index) + "\n"
         | Closure0Ptr (argReg: LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %closure* " + (printLLVM_Arg argReg) + ", i32 0, i32 0\n"
+        | Closure1Ptr (argReg: LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %closure* " + (printLLVM_Arg argReg) + ", i32 0, i32 1\n"
         | Closure2Ptr (argReg: LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %closure* " + (printLLVM_Arg argReg) + ", i32 0, i32 2\n"
         | PackedArgs0Ptr (argReg: LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %packed_args* " + (printLLVM_Arg argReg) + ", i32 0, i32 0\n"
         

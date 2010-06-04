@@ -135,6 +135,7 @@ and  Flavor =
      | FloatObj1Ptr of (LLVM_Arg)
      | FloatObj2Ptr of (LLVM_Arg * int)
      | Closure0Ptr of (LLVM_Arg)
+     | Closure1Ptr of (LLVM_Arg)
      | Closure2Ptr of (LLVM_Arg)
      | PackedArgs0Ptr of (LLVM_Arg)
 (*
