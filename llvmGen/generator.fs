@@ -121,11 +121,25 @@ let rec traverseEframes frameOffset instrList frameWereIn = let loadResultRegist
 
 
 
-(* Helper function to generate the LLVM lines which unpack arguments. Should generate lines like:
+(* Helper function to generate the LLVM lines which unpack arguments, and also the associated registers used to store the results.
+   Should generate lines like:
 	%reg_21 = getelementptr %packed_args* %args, i32 0, i32 1, i32 0
 	%reg_22 = load i64* %reg_21 *)
-let generateUnpackLines = ()
-
+let generateUnpackLines ((funOffset : int, (funName : string, paramNamesList : string list, theExp : exp, asMethod : bool)) as ourFunc) =
+    let instrList = ref []
+    let argCounter = ref 0
+        // regsNameList is a list to store the names of all the registers in which the unpacked args are stored.
+        // This list will be returned and used by generateCaseCode
+    let regsNameList = ref []
+    for eachParam in paramNamesList do
+        let newLoadResultReg = getFreshRegister()
+        let newGepResultReg = getFreshRegister()
+        regsNameList := List.append !regsNameList [newLoadResultReg]
+        let newLoadInstr = RegProdLine(Register(newLoadResultReg), Load(PackedArgs1Ptr(Register("%args"), !argCounter), I64Ptr, Register(newGepResultReg)))
+        instrList := List.append !instrList [newLoadInstr]
+        argCounter := !argCounter + 1
+    // return all of the instructions we produced, + the names of all the registers we stored things into.
+    (!instrList, !regsNameList)
 
 
 (* Helper function to generate the setup code for a specific function. Should look like:
@@ -139,111 +153,121 @@ L_39:
 	%reg_16 = load %eframe** %reg_15
 	%reg_17 = call i64 @main_1(%eframe* %reg_16)
 	ret i64 %reg_17 *)
-let generateCaseCode ourFunc wrongNumArgsLabel = ()
-                               (*
-                               let loadResultReg = getFreshRegister()
-                               let gepResultReg = getFreshRegister()
+
+(* The parts of the parameter are the offeset into the functionTable, the name of the function, the names of all the arguments*, 
+   and a bool which is true if the function was called as a method. *)
+let generateCaseCode ((index : int, (funName : string, paramNamesList : string list, theExp : exp, asMethod : bool)) as ourFunc) wrongNumArgsLabel intToPtr1ResultReg =
+                               let load1ResultReg = getFreshRegister()
+                               let gep1ResultReg = getFreshRegister()
                                let iCmpResultReg = getFreshRegister()
                                let jumpToLabel = getFreshLabel()
                                let bodyLabel = getFreshLabel()
+                               let gep2ResultReg = getFreshRegister()
+                               let load2ResultReg = getFreshRegister()
+                               let callResultReg = getFreshRegister()
+                               let argsList = ref []
 
                                let line1 = Label(jumpToLabel)
-                               let line2 = RegProdLine(Register(loadResultReg), PackedArgs0Ptr(Register("%args")), I64Ptr, Register(gepResultReg))
-                               let line3 = RegProdLine(Register(iCmpResultReg), ICmp(Eq, I64, Register(loadResultReg), ActualNumber(0)))
+                               let line2 = RegProdLine(Register(load1ResultReg), Load(PackedArgs0Ptr(Register("%args")), I64Ptr, Register(gep1ResultReg)))
+                               let line3 = RegProdLine(Register(iCmpResultReg), ICmp(Eq, I64, Register(load1ResultReg), ActualNumber(0)))
                                let line4 = NonRegProdLine(Br(Register(iCmpResultReg), bodyLabel, wrongNumArgsLabel))
                                let line5 = Label(bodyLabel)
                                
-                               let unpackArgsLines = generateUnpackLines
-                                 // %reg_15 = getelementptr %closure* %reg_5, i32 0, i32 2
-                                 // %reg_16 = load %eframe** %reg_15
-                               let line6 = 
-                                 // %reg_17 = call i64 @main_1(%eframe* %reg_16)
-                               let line7 = call
+                               let (unpackedArgsLines, unpackedRegNames) = generateUnpackLines ourFunc
+                                   // build the params list that will be used in line7 (the call line) below.
+                               for eachName in unpackedRegNames do
+                                   argsList := List.append !argsList [(I64, Register(eachName))]
 
-                               return jumpToLabel back up so we can use it in the case list of the switch statement. Also return all the instructions we generated
-                               ((line1 :: line2 :: line3 :: line4 :: line5 :: unpackArgsLines :: line6 :: line7), jumpToLabel)
-                               *)
+                                   // %reg_15 = getelementptr %closure* %reg_5, i32 0, i32 2
+                                   // %reg_16 = load %eframe** %reg_15
+                               let line6 = RegProdLine(Register(load2ResultReg), Load(Closure2Ptr(Register(intToPtr1ResultReg)), EFramePtrPtr, Register(gep2ResultReg)))
+                                   // %reg_17 = call i64 @main_1(%eframe* %reg_16)
+                                   // Add on the registers where the unpacked args are stored to the end of the args list.
+                               let line7 = RegProdLine(Register(callResultReg), Call(I64, ("@" + funName + "_" + (string index)), (List.append [(EFramePtr, Register(load2ResultReg))] !argsList) ))
+
+                                   //return jumpToLabel back up so we can use it in the case list of the switch statement. Also return all the instructions we generated
+                               ((line1 :: line2 :: line3 :: line4 :: line5 :: (List.append unpackedArgsLines (line6 :: [line7]))), jumpToLabel)
+                               
 
 (* Helper function to generate the LLVM code to switch across all the different functions in the program.*)
-(*let generateFunSwitch load1ResultReg = ()
-                                      // convert the table of functions into a list format so we can iterate over each of them
-                                      let functionList = Map.toList !GfunctionTable
-                                      // the label to be used in all of the functions for what happens if there's the wrong # of args.
-                                      let wrongNumArgsLabel = getFreshLabel()
-                                      let instrList = ref []
-                                      let casesList = ref []
-                                      let caseBodies = ref []
+let generateFunSwitch load1ResultReg intToPtr1ResultReg = //()
+                                       printf "MADE IT TO generateFunSwitch\n"
+                                       // convert the table of functions into a list format so we can iterate over each of them
+                                       let functionList = Map.toList !GfunctionTable
+                                       // the label to be used in all of the functions for what happens if there's the wrong # of args.
+                                       let wrongNumArgsLabel = getFreshLabel()
+                                       let instrList = ref []
+                                       let casesList = ref []
+                                       let caseBodies = ref []
+                                       printf "about to print out the function list!\n"
+                                       for (funOffset : int, (funName : string, paramNamesList : string list, theExp : exp, asMethod : bool)) as eachFun in functionList do
+                                           printf "printing: %A\n\n" eachFun
+                                           let (caseLines, jumpToLabel) = generateCaseCode eachFun wrongNumArgsLabel intToPtr1ResultReg
+                                           caseBodies := List.append !caseBodies caseLines
+                                           // generate the list of cases
+                                           casesList := List.append !casesList [(I64, ActualNumber(funOffset), GlobalLabel(jumpToLabel))]
 
-                                      for eachFun in functionList do
-                                          printf "printing: %A\n\n" eachFun wrongNumArgsLabel
-                                          let (caseLines, jumpToLabel) = generateCaseCode eachFun
-                                          caseBodies := List.append !caseBodies [caseLines]
-                                          let funOffset = lookup fun in table
-                                          // generate the list of cases
-                                          casesList := List.append !casesList [(I64, ActualNumber(funOffset), GlobalLabel(jumpToLabel))]
-
-                                      (!instrList, "generateFunSwitch is BROKEN")
-(*
-                                      let fallThroughLabel = getFreshLabel()
-                                      let switchLine = NonRegProdLine(Switch(I64, Register(load1ResultReg), GlobalLabel(fallThroughLabel), caseList))
-                                      let line1 = Label(fallThroughlabel)
-                                      let line2 = NonRegProdLine(AloneCall(Void, "@halt_with_error", [(I64, ActualNumber(3)); (I64, Register(load1ResultReg))]))
-                                      let line3 = Unreachable
-                                      let line4 = Label(wrongNumArgsLabel)
-                                      let line5 = NonRegProdLine(AloneCall(Void, "@halt_with_error_noval", [(I64, ActualNumber(4))]))
-                                      let line6 = Unreachable
-                                      
-                                      ((switchLine :: line1 :: line2 :: line3 :: line4 :: line5 :: line6 :: caseBodies), "generateFunSwitch is BROKEN")
-*)
+                                       let fallThroughLabel = getFreshLabel()
+                                       let switchLine = NonRegProdLine(Switch(I64, Register(load1ResultReg), GlobalLabel(fallThroughLabel), !casesList))
+                                       let line1 = Label(fallThroughLabel)
+                                       let line2 = NonRegProdLine(AloneCall(Void, "@halt_with_error", [(I64, ActualNumber(3)); (I64, Register(load1ResultReg))]))
+                                       let line3 = Unreachable
+                                       let line4 = Label(wrongNumArgsLabel)
+                                       let line5 = NonRegProdLine(AloneCall(Void, "@halt_with_error_noval", [(I64, ActualNumber(4))]))
+                                       let line6 = Unreachable
+                                       
+                                       ((switchLine :: line1 :: line2 :: line3 :: line4 :: line5 :: line6 :: !caseBodies), "generateFunSwitch is BROKEN")
 
 
-let generatefunctionDispatch = // First line should look like: define i64 @fun_dispatch(i64 %fun_val,%packed_args* %args)
-                                   // the string "%fun_val" is used very often so I made it a variable
-                               let funVal = "%fun_val"
-                               let and1ResultReg = getFreshRegister()
-                               let icmp1ResultReg = getFreshRegister()
-                               let and2ResultReg = getFreshRegister()
-                               let intToPtr1ResultReg = getFreshRegister()
-                               let load1ResultReg = getFreshRegister()
-                               let gep1ResultReg = getFreshRegister()
-                               let and3ResultReg = getFreshRegister()
-                               let icmp2ResultReg = getFreshRegister()
-                               let load2ResultReg = getFreshRegister()
-                               let gep2ResultReg = getFreshRegister()
+(* Overarching function to generate the function dispatch. *)
+let generateFunctionDispatch () = // First line should look like: define i64 @fun_dispatch(i64 %fun_val,%packed_args* %args)
+                                      // the string "%fun_val" is used very often so I made it a variable
+                                  printf "MADE IT TO FUNCTION DISPATCH\n"
+                                  let funVal = "%fun_val"
+                                  let and1ResultReg = getFreshRegister()
+                                  let icmp1ResultReg = getFreshRegister()
+                                  let and2ResultReg = getFreshRegister()
+                                  let intToPtr1ResultReg = getFreshRegister()
+                                  let load1ResultReg = getFreshRegister()
+                                  let gep1ResultReg = getFreshRegister()
+                                  let and3ResultReg = getFreshRegister()
+                                  let icmp2ResultReg = getFreshRegister()
+                                  let load2ResultReg = getFreshRegister()
+                                  let gep2ResultReg = getFreshRegister()
 
-                               let success1Label = getFreshLabel()
-                               let fail1Label = getFreshLabel()
-                               let success2Label = getFreshLabel()
-                               let fail2Label = getFreshLabel()
+                                  let success1Label = getFreshLabel()
+                                  let fail1Label = getFreshLabel()
+                                  let success2Label = getFreshLabel()
+                                  let fail2Label = getFreshLabel()
 
-                               let line1 = Define(I64, "@fun_dispatch", [(I64, funVal); (PackedArgsPtr, "%args")])
-                               let line2 = RegProdLine(Register(and1ResultReg), And(I64, Register(funVal), ActualNumber(3)))
-                                           // The #3 here is for the lower bits 11 for a pointer.
-                               let line3 = RegProdLine(Register(icmp1ResultReg), ICmp(Eq, I64, Register(and1ResultReg), ActualNumber(3))) 
-                               let line4 = NonRegProdLine(Br(Register(icmp1ResultReg), success1Label, fail1Label ))
-                               let line5 = Label(fail1Label)
-                               let line6 = NonRegProdLine(AloneCall(Void, "@halt_with_error_int", [(I64, ActualNumber(5)); (I64, Register(funVal))] ))
-                               let line7 = Unreachable
-                               let line8 = Label(success1Label)
-                                           // 18446744073709551612 is a number to mask out the bottom two bits & leave everything else unchanged. 4294967292
-                                           // 2147483644 is 2^31 -1. Not 2^32 b/c of a signed bit on the int. The -1 is to make it within the allowable range.
-                               let line9 = RegProdLine(Register(and2ResultReg), And(I64, Register(funVal), ActualNumber(2147483644)))
-                               let line10 = RegProdLine(Register(intToPtr1ResultReg), IntToPtr(I64, Register(and2ResultReg), ClosurePtr))
-                               let line11 = RegProdLine(Register(load1ResultReg), Load(Closure0Ptr(Register(intToPtr1ResultReg)), I64Ptr, Register(gep1ResultReg)))
-                                            // The #3 here is for the lower bits 11, in order to mask them off
-                               let line12 = RegProdLine(Register(and3ResultReg), And(I64, Register(load1ResultReg), ActualNumber(3)))
-                               let line13 = RegProdLine(Register(icmp2ResultReg), ICmp(Eq, I64, Register(and3ResultReg), ActualNumber(0)))
-                                            // If the bottom two bits were 00, go to success2, otherwise go to fail2
-                               let line14 = NonRegProdLine(Br(Register(icmp2ResultReg), success2Label, fail2Label ))
-                               let line15 = Label(fail2Label)
-                               let line16 = NonRegProdLine(AloneCall(Void, "@halt_with_error_firstword", [(I64, ActualNumber(9)); (I64, Register(load1ResultReg))] ))
-                               let line17 = Unreachable
-                               let line18 = Label(success2Label)
-                               let line19 = RegProdLine(Register(load2ResultReg), Load(Closure2Ptr(Register(intToPtr1ResultReg)), EFramePtrPtr, Register(gep2ResultReg)))
-                               let (switchLines, switchResultReg) = generateFunSwitch load1ResultReg
-                               let line20 = CloseBracket
-                               (line1 :: line2 :: line3 :: line4 :: line5 :: line6 :: line7 :: line8 :: line9 :: line10 :: line11 :: line12 :: line13 :: line14 :: line15 :: line16 :: line17 :: line18 :: line19 :: (List.append switchLines [line20]), switchResultReg)
-*)
+                                  let line1 = Define(I64, "@fun_dispatch", [(I64, funVal); (PackedArgsPtr, "%args")])
+                                  let line2 = RegProdLine(Register(and1ResultReg), And(I64, Register(funVal), ActualNumber(3)))
+                                              // The #3 here is for the lower bits 11 for a pointer.
+                                  let line3 = RegProdLine(Register(icmp1ResultReg), ICmp(Eq, I64, Register(and1ResultReg), ActualNumber(3))) 
+                                  let line4 = NonRegProdLine(Br(Register(icmp1ResultReg), success1Label, fail1Label ))
+                                  let line5 = Label(fail1Label)
+                                  let line6 = NonRegProdLine(AloneCall(Void, "@halt_with_error_int", [(I64, ActualNumber(5)); (I64, Register(funVal))] ))
+                                  let line7 = Unreachable
+                                  let line8 = Label(success1Label)
+                                              // 18446744073709551612 is a number to mask out the bottom two bits & leave everything else unchanged.
+                                              // 2147483644 is 2^31 -1. Not 2^32 b/c of a signed bit on the int. The -1 is to make it within the allowable range.
+                                  let line9 = RegProdLine(Register(and2ResultReg), And(I64, Register(funVal), ActualNumber(2147483644)))
+                                  let line10 = RegProdLine(Register(intToPtr1ResultReg), IntToPtr(I64, Register(and2ResultReg), ClosurePtr))
+                                  let line11 = RegProdLine(Register(load1ResultReg), Load(Closure0Ptr(Register(intToPtr1ResultReg)), I64Ptr, Register(gep1ResultReg)))
+                                               // The #3 here is for the lower bits 11, in order to mask them off
+                                  let line12 = RegProdLine(Register(and3ResultReg), And(I64, Register(load1ResultReg), ActualNumber(3)))
+                                  let line13 = RegProdLine(Register(icmp2ResultReg), ICmp(Eq, I64, Register(and3ResultReg), ActualNumber(0)))
+                                               // If the bottom two bits were 00, go to success2, otherwise go to fail2
+                                  let line14 = NonRegProdLine(Br(Register(icmp2ResultReg), success2Label, fail2Label ))
+                                  let line15 = Label(fail2Label)
+                                  let line16 = NonRegProdLine(AloneCall(Void, "@halt_with_error_firstword", [(I64, ActualNumber(9)); (I64, Register(load1ResultReg))] ))
+                                  let line17 = Unreachable
+                                  let line18 = Label(success2Label)
+                                  let line19 = RegProdLine(Register(load2ResultReg), Load(Closure2Ptr(Register(intToPtr1ResultReg)), EFramePtrPtr, Register(gep2ResultReg)))
+                                  let (switchLines, switchResultReg) = generateFunSwitch load1ResultReg intToPtr1ResultReg
+                                  let line20 = CloseBracket
+                                  (line1 :: line2 :: line3 :: line4 :: line5 :: line6 :: line7 :: line8 :: line9 :: line10 :: line11 :: line12 :: line13 :: line14 :: line15 :: line16 :: line17 :: line18 :: line19 :: (List.append switchLines [line20]), switchResultReg)
+
 
 (* Function that takes in an AST2, and returns a new list of LLVM instructions, tupled with a register where the result is stored *)
 let rec generate ourTree =
@@ -595,6 +619,7 @@ let printFlavor gepType (leftReg : LLVM_Arg) =
         | Closure1Ptr (argReg: LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %closure* " + (printLLVM_Arg argReg) + ", i32 0, i32 1\n"
         | Closure2Ptr (argReg: LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %closure* " + (printLLVM_Arg argReg) + ", i32 0, i32 2\n"
         | PackedArgs0Ptr (argReg: LLVM_Arg) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %packed_args* " + (printLLVM_Arg argReg) + ", i32 0, i32 0\n"
+        | PackedArgs1Ptr (argReg : LLVM_Arg, index : int) -> "\t" + (printLLVM_Arg leftReg) + " = getelementptr %packed_args* " + (printLLVM_Arg argReg) + ", i32 0, i32 1, i32 " + (sprintf "%d" index) + "\n"
         
 let printConditionCode code = 
     match code with

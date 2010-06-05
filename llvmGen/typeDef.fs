@@ -119,7 +119,7 @@ and  NonRegProdInstr =
 
 // These are all the different types of getelementptr's. Each of them has implicit field types + numbers based off their names.
 and  Flavor =
-       // The register it's using, and possibly the int offset into the array if it's on 2
+       // The register it's using, and possibly the int offset into the array if it's on 2 (or 1 in the case of PackedArgs1Ptr)
      | Eframe0 of (LLVM_Arg)
      | Eframe1 of (LLVM_Arg)
      | Eframe2 of (LLVM_Arg * int)
@@ -138,6 +138,7 @@ and  Flavor =
      | Closure1Ptr of (LLVM_Arg)
      | Closure2Ptr of (LLVM_Arg)
      | PackedArgs0Ptr of (LLVM_Arg)
+     | PackedArgs1Ptr of (LLVM_Arg * int)
 (*
      | EframeParent
      | EFrameCount
