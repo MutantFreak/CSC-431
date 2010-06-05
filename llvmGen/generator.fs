@@ -217,7 +217,7 @@ let generateFunSwitch load1ResultReg intToPtr1ResultReg = //()
                                        let line5 = NonRegProdLine(AloneCall(Void, "@halt_with_error_noval", [(I64, ActualNumber(4))]))
                                        let line6 = Unreachable
                                        
-                                       ((switchLine :: line1 :: line2 :: line3 :: line4 :: line5 :: line6 :: !caseBodies), "generateFunSwitch is BROKEN")
+                                       (switchLine :: line1 :: line2 :: line3 :: line4 :: line5 :: line6 :: !caseBodies)
 
 
 (* Overarching function to generate the function dispatch. *)
@@ -265,9 +265,9 @@ let generateFunctionDispatch () = // First line should look like: define i64 @fu
                                   let line17 = Unreachable
                                   let line18 = Label(success2Label)
                                   let line19 = RegProdLine(Register(load2ResultReg), Load(Closure2Ptr(Register(intToPtr1ResultReg)), EFramePtrPtr, Register(gep2ResultReg)))
-                                  let (switchLines, switchResultReg) = generateFunSwitch load1ResultReg intToPtr1ResultReg
+                                  let (switchLines) = generateFunSwitch load1ResultReg intToPtr1ResultReg
                                   let line20 = CloseBracket
-                                  (line1 :: line2 :: line3 :: line4 :: line5 :: line6 :: line7 :: line8 :: line9 :: line10 :: line11 :: line12 :: line13 :: line14 :: line15 :: line16 :: line17 :: line18 :: line19 :: (List.append switchLines [line20]), switchResultReg)
+                                  (line1 :: line2 :: line3 :: line4 :: line5 :: line6 :: line7 :: line8 :: line9 :: line10 :: line11 :: line12 :: line13 :: line14 :: line15 :: line16 :: line17 :: line18 :: line19 :: (List.append switchLines [line20]))
 
 
 (* Function that takes in an AST2, and returns a new list of LLVM instructions, tupled with a register where the result is stored *)
@@ -536,9 +536,10 @@ let wrapperGenerate doubleT stringT functionT fieldT =
     GfunctionTable := reverseMap functionT
     GfieldNameTable := reverseMap fieldT
     setMainName ()
+    let funcDispatchInstrs = generateFunctionDispatch ()
     let mainFunc = makeMainWrapper ()
     let llvmLines = ref []
-    llvmLines := (List.append !llvmLines mainFunc)
+    llvmLines := (List.append funcDispatchInstrs mainFunc)
     let mainFinalReg = ref ""
     let funList = Map.toList !GfunctionTable
     for funEntry in funList do
