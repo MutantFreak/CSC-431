@@ -192,7 +192,6 @@ let generateCaseCode ((index : int, (funName : string, paramNamesList : string l
 
 (* Helper function to generate the LLVM code to switch across all the different functions in the program.*)
 let generateFunSwitch load1ResultReg intToPtr1ResultReg = //()
-                                       printf "MADE IT TO generateFunSwitch\n"
                                        // convert the table of functions into a list format so we can iterate over each of them
                                        let functionList = Map.toList !GfunctionTable
                                        // the label to be used in all of the functions for what happens if there's the wrong # of args.
@@ -200,9 +199,7 @@ let generateFunSwitch load1ResultReg intToPtr1ResultReg = //()
                                        let instrList = ref []
                                        let casesList = ref []
                                        let caseBodies = ref []
-                                       printf "about to print out the function list!\n"
                                        for (funOffset : int, (funName : string, paramNamesList : string list, theExp : exp, asMethod : bool)) as eachFun in functionList do
-                                           printf "printing: %A\n\n" eachFun
                                            let (caseLines, jumpToLabel) = generateCaseCode eachFun wrongNumArgsLabel intToPtr1ResultReg
                                            caseBodies := List.append !caseBodies caseLines
                                            // generate the list of cases
@@ -223,7 +220,6 @@ let generateFunSwitch load1ResultReg intToPtr1ResultReg = //()
 (* Overarching function to generate the function dispatch. *)
 let generateFunctionDispatch () = // First line should look like: define i64 @fun_dispatch(i64 %fun_val,%packed_args* %args)
                                       // the string "%fun_val" is used very often so I made it a variable
-                                  printf "MADE IT TO FUNCTION DISPATCH\n"
                                   let funVal = "%fun_val"
                                   let and1ResultReg = getFreshRegister()
                                   let icmp1ResultReg = getFreshRegister()
@@ -650,11 +646,14 @@ let printConditionCode code =
         | Eq -> "eq"
         | Ne -> "ne"
 
-let printParamsList paramList = 
-    let answer = ref ""
-    for param in paramList do
-        answer := !answer + (printParam param)
-    !answer
+(* Function to print out an args list. first says whether or not this is the first argument, used to decide whether or not to put a comma in. *)
+let rec printParamsList (first:bool) paramList =
+    match paramList with
+        | [] -> ""
+                                                //If this is the first param in the list, do not precede it with a comma
+        | (theType : FieldType, name : string)::rest -> if (first = true)
+                                                            then (printFieldType theType) + " " + name + (printArgsList false rest)
+                                                            else ", " + (printFieldType theType) + " " + name + (printArgsList false rest)
 
 (* Function that takes a register producing instruction, and returns its string representation. *)
 let printRegProdInstr instr resultRegister =
@@ -701,7 +700,7 @@ let printLLVMLine singleInstr =
         | RegProdLine (resultRegister : LLVM_Arg, producingInstr : RegProdInstr) -> (printRegProdInstr producingInstr resultRegister)
         | NonRegProdLine (nonProducingInstr) -> (printNonRegProdInstr nonProducingInstr)
         | Declare (theType: FieldType, name : string) -> "declare " + (printFieldType theType) + " " + name
-        | Define (theType : FieldType, name : string, paramsList: Param list) -> "define " + (printFieldType theType) + " " + name + " (" + (printParamsList paramsList ) + ") {"
+        | Define (theType : FieldType, name : string, paramsList: Param list) -> "define " + (printFieldType theType) + " " + name + " (" + (printParamsList true paramsList) + ") {"
         | Unreachable -> "unreachable"
         | CloseBracket -> "}"
 
