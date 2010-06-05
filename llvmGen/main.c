@@ -1,6 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define TRUE 1
+#define FALSE 0
+
+typedef struct cloStruct{
+  long long a;
+  long long b;
+  struct cloStruct* c;
+} cloStruct;
+
 //C helpers
 extern void print_val(long long a);
 extern void halt_with_error(long long a, long long b);
@@ -39,16 +48,19 @@ extern long long instanceof_prim(long long a, long long b);
 extern long long sqrt_prim(long long a);
 
 //private helper
-extern bool isInt(long long a);
-extern bool isDouble(long long a);
-extern bool isBool(long long a);
-extern bool isVoid(long long a);
-extern bool isString(long long a);
+extern int isInt(long long a);
+extern int isDouble(long long a);
+extern int isBool(long long a);
+extern int isVoid(long long a);
+extern int isString(long long a);
+extern int isClosure(long long a);
+
 
 extern int getInt(long long a);
 extern double getDouble(long long a);
-extern bool getBool(long long a);
+extern int getBool(long long a);
 extern char* getString(long long a);
+extern cloStruct getClosure(long long a);
 
 extern void print_val(long long a){
 
@@ -167,55 +179,85 @@ extern long long sqrt_prim(long long a){
 //--01 - double
 //--10 - bool or void
 //-110 - bool
-//0110 - false bool
-//1110 - true bool
+//0110 - FALSE bool
+//1110 - TRUE bool
 //-010 - void
 //--11 - pointer
-//0111 - string (Clements)
-//1011 - closure (our decision)
+//01 11 - string (Clements)
+//10 11 - closure (our decision)
 
 
-extern bool isInt(long long a){
+extern int isInt(long long a){
   long long aCheck = 3 & a;
   if(aCheck == 0){
-    return true;
+    return TRUE;
   }
-  return false;
+  return FALSE;
 }
-extern bool isDouble(long long a){
-  long long aCheck = 3 & a;
-  if(aCheck == 1){
-    return true;
-  }
-  return false;
-}
-extern bool isBool(long long a){
+
+extern int isBool(long long a){
   long long aCheck = 7 & a;
   if(aCheck == 6){
-    return true;
+    return TRUE;
   }
-  return false;
+  return FALSE;
 }
-extern bool isVoid(long long a){
+
+extern int isVoid(long long a){
   long long aCheck = 7 & a;
   if(aCheck == 2){
-    return true;
+    return TRUE;
   }
-  return false;
+  return FALSE;
 }
-extern bool isString(long long a){
-  long long aCheck = 15 & a;
-  if(aCheck == 7){
-    return true;
+
+extern int isPointer(long long a){
+  long long aCheck = 3 & a;
+  if(aCheck == 3){
+    return TRUE;
   }
-  return false;
+  return FALSE;
 }
-extern bool isClosure(long long a){
-  long long aCheck = 15 & a;
-  if(aCheck == 11){
-    return true;
+
+extern int isDouble(long long a){
+  long long aCheck = 3 & a;
+  if(aCheck == 1){
+    return TRUE;
   }
-  return false;
+
+  return FALSE;
+}
+
+extern int isString(long long a){
+  if(!isPointer(a)){
+    return FALSE;
+  }
+  
+  long long masked = (long long) a & (long long) ~3; 
+  long long* ptr = (long long*) masked;
+  long long data = *(ptr);
+  data = data & 3;
+
+  if(data != 1){
+    return FALSE;
+  }
+  return TRUE;
+}
+
+extern int isClosure(long long a){
+  if(!isPointer(a)){
+    return FALSE;
+  }
+    
+  long long masked = (long long) a & (long long) ~3;
+  long long* ptr = (long long*) masked;
+  long long data = *ptr;
+  data = data & 3;
+
+  if(data != 2){
+    return FALSE;
+  }
+  return TRUE;  
 }
 
 extern int getInt(long long a){
@@ -225,37 +267,63 @@ extern int getInt(long long a){
   }
   return a/4;
 }
+
 extern double getDouble(long long a){
   if(!isDouble(a)){
     fprintf(stderr,"in getDouble, this is not double!\n");
     exit(1);
   }
-  return a/4;
+  long long masked = (long long) a & (long long) ~3;
+  long long* ptr = (long long*) masked;
+
+  long long data = *ptr;
+  return data;
 }
-extern bool getBool(long long a){
+
+extern int getBool(long long a){
   if(!isBool(a)){
     fprintf(stderr,"in getBool, this is not bool!\n");
     exit(1);
   }
   long long aCheck = 15 & a;
   if(aCheck == 6){
-    return false;
+    return FALSE;
   }
   else{
-    return true;
+    return TRUE;
   }
 }
+
 extern char* getString(long long a){
   if(!isString(a)){
     fprintf(stderr,"in getString, this is not string!\n");
     exit(1);
   }
-  return NULL;//(char*)a;
+  
+  long long masked = (long long) a & (long long) ~3;
+  long long* ptr = (long long*) masked;
+
+  char* data = (char*) *(ptr+1);
+  
+  return data;
+}
+
+extern cloStruct getClosure(long long a){
+  if(!isString(a)){
+    fprintf(stderr,"in getString, this is not string!\n");
+    exit(1);
+  }
+  
+  long long masked = (long long) a & (long long) ~3;
+  cloStruct* ptr = (cloStruct*) masked;
+  
+  return *ptr;
 }
 
 int main(){
-  //main_0(NULL);
-  
+  llvmMain();
+
+  return 0;
 }
 
 
