@@ -1,4 +1,31 @@
-Tag Bits:
+Throughout the course of this project, we made a number of design choices which had both positive and negative long lasting consequences. Near the beginning of the project, we found ourselves falling behind on the first milestone partially due to an initial choice to spend time building a strong and lasting type definitions file (typeDef.fs). This type definitions file expanded and grew over the weeks we spent working on the compiler in order to support all of the different types of LLVM instructions we might use.
+
+We created matching print functions which were designed to print out a given type from our typeDef.fs file. There is a fair bit of boiler plate repeated code here which we would love to clean up, but due a lack of time we did left it very verbose.
+
+To give a description / high level overview of how our compiler works:
+Control flow begins in our footlecc shell script. This compiles and links our files together, and runs Run.exe, the result of Run.fs. Run.exe calls the Lexer, the Parser, the Static Pass, and then the generator on the given command line argument file. After Run.exe, creates our generated.exe using main.c. main.c's main function calls a staticly named LLVM function, llvmMain(), to start the execution of the LLVM code. This staticly named function calls a dynamically named main function, something like "main_3".
+
+Details: Because at compile time there were an unknown number of functions in the program, the generated main function may have wound up being called anything from "main_0" to "main_17" or more, (where the # used is the number of other functions present in the program which had LLVM code generated for them first). The easy solution we found to this was to always start by calling a staticly named function, llvmMain(), which would perform a lookup in the function table given by the StaticPass in order to find out which offset main had, and call it accordingly. Control flow is then handed over to LLVM instructions, which execute from there.
+
+ASCII Table of Files, Line Counts, and Descriptions:
+File Name         Line Count      Description
+----------------------------------------------
+AST.fs         |      36       | Given - it contains the type definition for the AST produced by the Parser.
+AST2.fs        |      45       | Given - it contains the type definition for the slightly modified AST2 produced by the StaticPass.
+footlecc       |      11       | Shell script to compile and run our generated.exe and Run.exe
+generator.fs   |     723       | Contains the majority of the functions used in our compiler. The most important is the recursive function generate, which takes in an AST2 exp, and matches it against all the possible types of expressions. Each expression which our compiler supports then has LLVM code generated for it accordingly.
+main.c         |     330       | Contains our main function which is run upon execution of the program, as well as the primitive C functions we used to save ourselves from the work of generating that code in LLVM.
+makefile       |      13       | The makefile is used with the command 'make' in order to compile our compiler. 'make run' can be used to 
+Run.fs         |      50       | Contains the function which calls the Lexer, the Parser, the Static Pass, 
+typeDef.fs     |     158       | Contains all of the core type definitions used to describe every type of LLVM instruction we use.
+
+
+We are additionally using the staticPass.fs and parser.dll files you gave us for the Lexer and Parser, but because we did not write that code we are not counting those files here.
+
+Additional Notes:
+Our compiler does not generate any SPARC assembly instructions. We opted to continue work on functions and other parts of our compiler instead of skipping ahead and creating something to break our list of LLVM instructions into basic blocks. What we do have is a good number of primitive C functions written, as well as support for a large number of key AST2 expression types, including IfExp, ScopeExp, SetExp, CloExp, StringExp, DoubleExp, BoolExp, IntExp, ReturnExp, and BeginExp. Although at the time of writing this, our compiler is not successfully executing LLVM instructions for our functions, we are in the process of making slight syntax changes which we are finding necessary in order to successfully execute our generated instructions. One of the advantages to our type system we created is that making changes such as these to our print-out functions is very easy, and making a change in one location affects all of the generated code.
+
+These are the tag bits that we decided to use in our implementation:
 00 - int
 01 - double
 10 - bool or void
@@ -8,14 +35,11 @@ Tag Bits:
 1110 - true bool
 010 - void
 
-  * The bottom two bits here must be 11 since we're talking about types of pointers. We're interested in the next 2 bits above the 11.
-0111 - string (Clements)
-1011 - closure (our decision)
 
-Things we're unsure about:
-In variableCreation.s, why do we do this? We store the number 1 into the first i64 field of the strobj
-	// put a reference to the first field of the strobj into reg_39
-	%reg_39 = getelementptr %strobj* %reg_38, i32 0, i32 0
-	// put 1 into the 0th field of that strobj
-	store i64 1, i64* %reg_39
+01 - string (given by Professor Clements)
+10 - closure (our decision)
+    * The bottom two bits here on the previous pointer must be 11 since we're talking about types of pointers. We're interested in the next 2 bits once we've followed that pointer.
+
+
+We want to write much more in this README to more fully describe the design and implementation details of our project, but due to the time being a few minutes past midnight, we need to stop now and hand this in. We would be happy to visit you during office hours to further describe any elements of our design or implementation.
 
