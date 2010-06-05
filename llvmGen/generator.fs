@@ -652,8 +652,8 @@ let rec printParamsList (first:bool) paramList =
         | [] -> ""
                                                 //If this is the first param in the list, do not precede it with a comma
         | (theType : FieldType, name : string)::rest -> if (first = true)
-                                                            then (printFieldType theType) + " " + name + (printArgsList false rest)
-                                                            else ", " + (printFieldType theType) + " " + name + (printArgsList false rest)
+                                                        then (printFieldType theType) + " " + name + (printParamsList false rest)
+                                                        else ", " + (printFieldType theType) + " " + name + (printParamsList false rest)
 
 (* Function that takes a register producing instruction, and returns its string representation. *)
 let printRegProdInstr instr resultRegister =
