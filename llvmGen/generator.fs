@@ -28,6 +28,7 @@ let registerCounter = ref 1;
 let functionCounter = ref 0;
 let labelCounter = ref 1;
 let stringNameCounter = ref 1;
+let mainFunction = ref ""
 
 // Function to produce a fresh register name
 let getFreshRegister () = 
@@ -499,6 +500,25 @@ let rec generate ourTree =
         | _ -> raise (RuntimeError (sprintf "Found an expression that is not supported: %A\n" ourTree))
 
 
+
+let setMainName () = 
+    let funcCount = ref 0;
+    let funList = Map.toList !GfunctionTable
+    for funEntry in funList do
+        match funEntry with
+            | (theInt : int, (theStr : string , theStrList : string list , theExp : exp , theBool : bool)) -> if (theStr = "main")
+                                                                                                              then mainFunction := "@main_" + (sprintf "%d" !funcCount)
+                                                                                                                   ()
+                                                                                                              else funcCount := !funcCount + 1
+
+let makeMainWrapper () =
+    let defineInstr = Define(I64, "@llvmMain", [])
+    let callReg = getFreshRegister()
+    let callInstr = RegProdLine(Register(callReg), Call(I64, !mainFunction, [(EFramePtr, Constant("@empty_env"))] ))
+    let retInstr = NonRegProdLine(Ret(I64, Register(callReg)))
+    let brackInstr = CloseBracket
+    [defineInstr; callInstr; retInstr; brackInstr]
+
 let reverseMap theMap = 
     let theList = Map.toList !theMap
 
@@ -515,7 +535,10 @@ let wrapperGenerate doubleT stringT functionT fieldT =
     GstringTable := reverseMap stringT
     GfunctionTable := reverseMap functionT
     GfieldNameTable := reverseMap fieldT
+    setMainName ()
+    let mainFunc = makeMainWrapper ()
     let llvmLines = ref []
+    llvmLines := (List.append !llvmLines mainFunc)
     let mainFinalReg = ref ""
     let funList = Map.toList !GfunctionTable
     for funEntry in funList do
