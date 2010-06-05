@@ -26,7 +26,7 @@ let runFootle (str : string) =
     let (doubleTable,stringTable,functionTable,fieldNameTable) = (StaticPass.transform lex)
     //printf "doubleTable=%A\n" doubleTable
     //printf "stringTable=%A\n" stringTable
-    printf "functionTable=%A\n" functionTable
+    //printf "functionTable=%A\n" functionTable
     //printf "fieldNameTable=%A\n" fieldNameTable
 
     //printf "\nPrinting llvmGen result=======================\n"
