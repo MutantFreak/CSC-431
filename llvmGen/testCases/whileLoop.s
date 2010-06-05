@@ -287,16 +287,16 @@ L_jump_to_readLine_prim_66:
 L_jump_to_sqrt_prim_67:
 	call void @halt_with_error_noval(i64 10) nounwind noreturn
 	unreachable
-	//actually a pointer
+	;;actually a pointer
 L_regularcall_69:
 	%reg_18 = and i64 %fun_val, 3
 	%reg_19 = icmp eq i64 %reg_18, 1
 	br i1 %reg_19, label %L_72, label %L_73
-	//not pointer
+	;;not pointer
 L_73:
 	call void @halt_with_error_int(i64 5,i64 %fun_val) nounwind noreturn
 	unreachable
-	//mask but the last thing, turn it into a pointer, load it, check the tag that it's a closure
+	;;mask but the last thing, turn it into a pointer, load it, check the tag that it's a closure
 L_72:
 	%reg_20 = and i64 %fun_val, 18446744073709551612
 	%reg_21 = inttoptr i64 %reg_20 to %closure*
@@ -305,15 +305,15 @@ L_72:
 	%reg_24 = and i64 %reg_23, 3
 	%reg_25 = icmp eq i64 %reg_24, 0
 	br i1 %reg_25, label %L_74, label %L_75
-	// not a closure
+	;; not a closure
 L_75:
 	call void @halt_with_error_firstword(i64 9,i64 %reg_23) nounwind noreturn
 	unreachable
-	//get the index from it
+	;;get the index from it
 L_74:
 	%reg_26 = getelementptr %closure* %reg_21, i32 0, i32 2
 	%reg_27 = load %eframe** %reg_26
-     //one pair in brackets for every function you could jump to
+     ;;one pair in brackets for every function you could jump to
 	switch i64 %reg_23, label %L_nomatch_71 [i64 0, label %L_jump_to_0_39 ]
 L_nomatch_71:
 	call void @halt_with_error(i64 3,i64 %reg_23) nounwind noreturn
@@ -321,13 +321,13 @@ L_nomatch_71:
 L_wrongnumargs_70:
 	call void @halt_with_error_noval(i64 4) nounwind noreturn
 	unreachable
-   // try to unpack the args, make sure thera re 0 of them. if ther aren't 0, jump to wrongnumargs.
+   ;; try to unpack the args, make sure thera re 0 of them. if ther aren't 0, jump to wrongnumargs.
 L_jump_to_0_39:
 	%reg_28 = getelementptr %packed_args* %args, i32 0, i32 0
 	%reg_29 = load i64* %reg_28
 	%reg_30 = icmp eq i64 %reg_29, 0
 	br i1 %reg_30, label %L_76, label %L_wrongnumargs_70
-   // get the closures eframe ptr, and call the method version of the function, and also pass in the "this" ptr.
+   ;; get the closures eframe ptr, and call the method version of the function, and also pass in the "this" ptr.
 L_76:
 	%reg_31 = getelementptr %closure* %reg_21, i32 0, i32 2
 	%reg_32 = load %eframe** %reg_31
@@ -341,21 +341,21 @@ L_76:
 
 define i64 @main_0(%eframe* %env) {
 
-  // make space for a new eframe
+  ;; make space for a new eframe
 	%reg_34 = malloc {%eframe*, i64, [1 x i64]}, align 4
-	// lets call {%eframe*, i64, [3 x i64]}* an eframe*
-	// 1 because there are 1 local variables in this probram
+	;; lets call {%eframe*, i64, [3 x i64]}* an eframe*
+	;; 1 because there are 1 local variables in this probram
 	%reg_35 = bitcast {%eframe*, i64, [1 x i64]}* %reg_34 to %eframe*
-	// load the reference to parent pointer to 36
+	;; load the reference to parent pointer to 36
 	%reg_36 = getelementptr %eframe* %reg_35, i32 0, i32 0
-  // the memory location defined by reg36 gets 
-  // the current env, which is a eframe**
+  ;; the memory location defined by reg36 gets 
+  ;; the current env, which is a eframe**
 	store %eframe* %env, %eframe** %reg_36
 	
-	// put a reference to field 1 (slot) in env, into reg37
+	;; put a reference to field 1 (slot) in env, into reg37
 	%reg_37 = getelementptr %eframe* %reg_35, i32 0, i32 1
-	// put 1, which is the number of variables in this function
-	// into a space pointed at by reg37
+	;; put 1, which is the number of variables in this function
+	;; into a space pointed at by reg37
 	store i64 1, i64* %reg_37
 	
 	

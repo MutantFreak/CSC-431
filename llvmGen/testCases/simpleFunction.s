@@ -158,40 +158,40 @@ L_jump_to_sqrt_prim_30:
 	call void @halt_with_error_noval(i64 10) nounwind noreturn
 	unreachable
 L_regularcall_32:
-   // and on the bits 3 (11) to isolate the bottom
-   // throw away everything but the bottom 2 bits
+   ;; and on the bits 3 (11) to isolate the bottom
+   ;; throw away everything but the bottom 2 bits
 	%reg_2 = and i64 %fun_val, 3
-   // check if the bottom two bits were 01 (a pointer?)
+   ;; check if the bottom two bits were 01 (a pointer?)
 	%reg_3 = icmp eq i64 %reg_2, 1
-   // if they were, go to L_35, if not, go to L_36 (failure)
+   ;; if they were, go to L_35, if not, go to L_36 (failure)
 	br i1 %reg_3, label %L_35, label %L_36
 L_36:
 	call void @halt_with_error_int(i64 5,i64 %fun_val) nounwind noreturn
 	unreachable
 L_35:
-   // acquire everything but the bottom two bits, which get turned to 0's.
+   ;; acquire everything but the bottom two bits, which get turned to 0's.
 	%reg_4 = and i64 %fun_val, 18446744073709551612
-   // turn it into a closure
+   ;; turn it into a closure
 	%reg_5 = inttoptr i64 %reg_4 to %closure*
-   // get a reference to the first field of the closuer and put it into reg_6
+   ;; get a reference to the first field of the closuer and put it into reg_6
 	%reg_6 = getelementptr %closure* %reg_5, i32 0, i32 0
-   // pull the result out of that address and put it in reg_7
+   ;; pull the result out of that address and put it in reg_7
 	%reg_7 = load i64* %reg_6
-   // Throw away everything but the bottom two bits again
+   ;; Throw away everything but the bottom two bits again
 	%reg_8 = and i64 %reg_7, 3
-   // make sure the bottom two bits are 00 (a function?)
+   ;; make sure the bottom two bits are 00 (a function?)
 	%reg_9 = icmp eq i64 %reg_8, 0
-   // if the bottom two bits were 00, go to L_37, otherwise go to L_38 (failure)
+   ;; if the bottom two bits were 00, go to L_37, otherwise go to L_38 (failure)
 	br i1 %reg_9, label %L_37, label %L_38
 L_38:
 	call void @halt_with_error_firstword(i64 9,i64 %reg_7) nounwind noreturn
 	unreachable
 L_37:
-   // get field 2 out of the closure and put it into reg_10
+   ;; get field 2 out of the closure and put it into reg_10
 	%reg_10 = getelementptr %closure* %reg_5, i32 0, i32 2
-   // load the eframe out of reg_10
+   ;; load the eframe out of reg_10
 	%reg_11 = load %eframe** %reg_10
-   // jump to labels for the actual functions.
+   ;; jump to labels for the actual functions.
 	switch i64 %reg_7, label %L_nomatch_34 [i64 4, label %L_jump_to_1_1 i64 0, label %L_jump_to_0_2 ]
 L_nomatch_34:
 	call void @halt_with_error(i64 3,i64 %reg_7) nounwind noreturn
@@ -199,7 +199,7 @@ L_nomatch_34:
 L_wrongnumargs_33:
 	call void @halt_with_error_noval(i64 4) nounwind noreturn
 	unreachable
-// Label for function 1 (main)
+;; Label for function 1 (main)
 L_jump_to_1_1:
 	%reg_12 = getelementptr %packed_args* %args, i32 0, i32 0
 	%reg_13 = load i64* %reg_12
@@ -210,7 +210,7 @@ L_39:
 	%reg_16 = load %eframe** %reg_15
 	%reg_17 = call i64 @main_1(%eframe* %reg_16)
 	ret i64 %reg_17
-// Label for function 2 (our testFunction)
+;; Label for function 2 (our testFunction)
 L_jump_to_0_2:
 	%reg_18 = getelementptr %packed_args* %args, i32 0, i32 0
 	%reg_19 = load i64* %reg_18
@@ -228,7 +228,7 @@ L_40:
 
 
 ;; method_dispatch
-// switch for the value fun_val. L_regularcall_72 is the fall through case. A single case is "i64 3, label %L_jump_to_flexilessthan_prim_43"
+;; switch for the value fun_val. L_regularcall_72 is the fall through case. A single case is "i64 3, label %L_jump_to_flexilessthan_prim_43"
 define i64 @method_dispatch(i64 %fun_val,%packed_args* %args,i64 %obj) {
 	switch i64 %fun_val, label %L_regularcall_72 [i64 3, label %L_jump_to_flexilessthan_prim_43 i64 11, label %L_jump_to_flexilessequalthan_prim_44 i64 19, label %L_jump_to_flexigreaterthan_prim_45 i64 27, label %L_jump_to_flexigreaterequalthan_prim_46 i64 35, label %L_jump_to_equal_prim_47 i64 43, label %L_jump_to_flexiplus_prim_48 i64 51, label %L_jump_to_fleximinus_prim_49 i64 59, label %L_jump_to_flexitimes_prim_50 i64 67, label %L_jump_to_flexidivide_prim_51 i64 75, label %L_jump_to_and_prim_52 i64 83, label %L_jump_to_or_prim_53 i64 91, label %L_jump_to_not_prim_54 i64 99, label %L_jump_to_stringLength_prim_55 i64 107, label %L_jump_to_subString_prim_56 i64 115, label %L_jump_to_stringAppend_prim_57 i64 123, label %L_jump_to_stringEqualHuh_prim_58 i64 131, label %L_jump_to_stringLessThanHuh_prim_59 i64 139, label %L_jump_to_instanceof_prim_60 i64 147, label %L_jump_to_intHuh_prim_61 i64 155, label %L_jump_to_boolHuh_prim_62 i64 163, label %L_jump_to_floatHuh_prim_63 i64 171, label %L_jump_to_voidHuh_prim_64 i64 179, label %L_jump_to_stringHuh_prim_65 i64 187, label %L_jump_to_closureHuh_prim_66 i64 195, label %L_jump_to_plainHuh_prim_67 i64 203, label %L_jump_to_print_prim_68 i64 211, label %L_jump_to_readLine_prim_69 i64 219, label %L_jump_to_sqrt_prim_70 ]
 L_jump_to_flexilessthan_prim_43:
