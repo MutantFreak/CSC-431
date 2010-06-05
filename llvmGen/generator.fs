@@ -428,7 +428,6 @@ let rec generate ourTree =
                                          (List.append instrList [retLine], resultReg)
                                          
         | SetExp ((varName : string, frameOffset : int, fieldOffset : int), theExp : exp) -> let freshReg = getFreshRegister()
-                                                                                             printf "we found varName %O in a SetExp\n" varName
                                                                                              let (insideList, insideReg) = generate theExp
                                                                                              let storeInst = NonRegProdLine(Store (Eframe2Ptr(Register(!Geframe), fieldOffset), I64, Register(insideReg), I64Ptr, Register(freshReg), Register(freshReg)))
                                                                                              (List.append insideList [storeInst], freshReg)
