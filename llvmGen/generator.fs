@@ -262,8 +262,9 @@ let generateFunctionDispatch () = // First line should look like: define i64 @fu
                                   let line18 = Label(success2Label)
                                   let line19 = RegProdLine(Register(load2ResultReg), Load(Closure2Ptr(Register(intToPtr1ResultReg)), EFramePtrPtr, Register(gep2ResultReg)))
                                   let (switchLines) = generateFunSwitch load1ResultReg intToPtr1ResultReg
+                                  let retLine = NonRegProdLine(Ret(I64,ActualNumber(63)))
                                   let line20 = CloseBracket
-                                  (line1 :: line2 :: line3 :: line4 :: line5 :: line6 :: line7 :: line8 :: line9 :: line10 :: line11 :: line12 :: line13 :: line14 :: line15 :: line16 :: line17 :: line18 :: line19 :: (List.append switchLines [line20]))
+                                  (line1 :: line2 :: line3 :: line4 :: line5 :: line6 :: line7 :: line8 :: line9 :: line10 :: line11 :: line12 :: line13 :: line14 :: line15 :: line16 :: line17 :: line18 :: line19 :: (List.append switchLines [retLine; line20]) )
 
 
 (* Function that takes in an AST2, and returns a new list of LLVM instructions, tupled with a register where the result is stored *)
@@ -334,7 +335,6 @@ let rec generate ourTree =
                                      let gep0ResultReg = getFreshRegister()
                                      let gep1ResultReg = getFreshRegister()
                                      let gep2ResultReg = getFreshRegister()
-                                     let gep3ResultReg = getFreshRegister()
                                      let ptrToIntResultReg = getFreshRegister()
                                      let orResultReg = getFreshRegister()
                                      let line1 = RegProdLine(Register(mallocResultReg), Malloc(StrObj))
@@ -345,10 +345,11 @@ let rec generate ourTree =
                                      let line2 = NonRegProdLine(Store(StrObj0Ptr(Register(mallocResultReg)), I64, ActualNumber(1), I64Ptr, Register(gep0ResultReg), Register(gep0ResultReg)))
                                      let line3 = NonRegProdLine(Store(StrObj1Ptr(Register(mallocResultReg)), SlotsPtr, Constant("@empty_slots"), SlotsPtrPtr, Register(gep1ResultReg), Register(gep1ResultReg)))
                                      let line4 = RegProdLine(Register(gep2ResultReg), GEP(StrObj2Ptr(Register(mallocResultReg))))
-                                     let constName = "@stringconst_" + (string index)
+                                     let constName = "@stringconst_" + (string index) + "s"
                                          // let stringName = lookup in map (the index of this string)
                                      let stringName = Map.find index !GstringTable
-                                     let line5 = NonRegProdLine(Store(Array0Ptr(Array((String.length stringName), I8), Constant(constName)), I8Ptr, Register(gep3ResultReg), I8PtrPtr, Register(gep2ResultReg), Register(gep3ResultReg) ))
+                                     // StrStore of (FieldType * ActualNumber * string * FieldType * LLVM_Arg)
+                                     let line5 = NonRegProdLine(StrStore(I8Ptr,ActualNumber((String.length stringName)+1),constName,I8PtrPtr,Register(gep2ResultReg)))
                                      let line6 = RegProdLine(Register(ptrToIntResultReg), PtrToInt(StrObjPtr, Register(mallocResultReg), I64))
                                          // Put on the tag bits for a string.
                                      let line7 = RegProdLine(Register(orResultReg), Or(I64, Register(ptrToIntResultReg), ActualNumber(1)))
@@ -544,6 +545,7 @@ let wrapperGenerate doubleT stringT functionT fieldT =
                                                                                                               functionCounter := !functionCounter + 1
                                                                                                               llvmLines := (List.append !llvmLines [defineLine])
                                                                                                               llvmLines := (List.append !llvmLines generatedLLVM)
+                                                                                                              llvmLines := (List.append !llvmLines [NonRegProdLine(Ret(I64,ActualNumber(63)))])
                                                                                                               llvmLines := (List.append !llvmLines [CloseBracket])
                                                                                                               if (theStr = "main")
                                                                                                               then mainFinalReg := finalReg
@@ -614,7 +616,7 @@ let rec printArgsList (first:bool) argList =
 let rec printCaseList caseList =
     match caseList with
         | [] -> ""
-        | (theType : FieldType, offsetArg : LLVM_Arg, labelArg : LLVM_Arg)::rest -> (printFieldType theType) + " " + (printLLVM_Arg offsetArg) + ", " + (printLLVM_Arg labelArg) + " " + (printCaseList rest)
+        | (theType : FieldType, offsetArg : LLVM_Arg, labelArg : LLVM_Arg)::rest -> (printFieldType theType) + " " + (printLLVM_Arg offsetArg) + ", label %" + (printLLVM_Arg labelArg) + " " + (printCaseList rest)
 
 (* Takes in the type of flavor, and the register the instruction is being put into *)
 let printFlavor gepType (leftReg : LLVM_Arg) = 
@@ -680,12 +682,15 @@ let printNonRegProdInstr instr =
         // The data in first register is saved in memory at the address found in second register.
         // store i64 3, i64* %reg_37
         | Store (gepType : Flavor, dataType : FieldType, dataReg : LLVM_Arg, addressType : FieldType, addressReg : LLVM_Arg, gepRegister : LLVM_Arg) ->(printFlavor gepType gepRegister) + "\t" + "store " + (printFieldType dataType) + " " + (printLLVM_Arg dataReg) + ", " + (printFieldType addressType) + " " + (printLLVM_Arg addressReg)
+        //StrStore of (FieldType * LLVM_Arg * string * FieldType * LLVM_Arg)
+        | StrStore (type1 : FieldType, num : LLVM_Arg,  str : string, type2, theReg : LLVM_Arg) -> "\tstore " + (printFieldType type1) + " getelementptr([" + (printLLVM_Arg num) + " x i8]* " + str + ", i64 0, i64 0), " + (printFieldType type2) + " " + (printLLVM_Arg theReg)
+                                                                                                  //store i8* getelementptr([9 x i8]* @stringconst_0s, i64 0, i64 0), i8** %reg_41
         // Br is made up of the i1 field to check (a LLVM_ARG), the label to go to if it's true, and the label to go to if it's false.
         | Br (boolReg : LLVM_Arg, trueLabel : string, falseLabel : string) -> "\t" + "br i1 " + (printLLVM_Arg boolReg) + ", label %" + trueLabel + ", label %" + falseLabel
         | UnconditionalBr (label : string) -> "\t" + "br label %" + label
         | Ret (theType : FieldType, resultReg : LLVM_Arg) -> "\t" + "ret " + (printFieldType theType) + " " + (printLLVM_Arg resultReg)
         | AloneCall (theType : FieldType, name : string, argsList : Arg list) -> "\t" + "call " + (printFieldType theType) + " " + name + "(" + (printArgsList true argsList) + ") nounwind noreturn\n"
-        | Switch (theType : FieldType, switchVal : LLVM_Arg, fallThroughLabel : LLVM_Arg, caseList : Case list) -> "\t" + "switch " + (printFieldType theType) + " " + (printLLVM_Arg switchVal) + ", label " + (printLLVM_Arg fallThroughLabel) + " [" + (printCaseList caseList) + "]\n"
+        | Switch (theType : FieldType, switchVal : LLVM_Arg, fallThroughLabel : LLVM_Arg, caseList : Case list) -> "\t" + "switch " + (printFieldType theType) + " " + (printLLVM_Arg switchVal) + ", label %" + (printLLVM_Arg fallThroughLabel) + " [" + (printCaseList caseList) + "]\n"
 
 (* Branch should look like this:
    br i1 %cond, label %IfEqual, label %IfUnequal

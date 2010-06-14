@@ -104,6 +104,9 @@ and  NonRegProdInstr =
      // flavor is the kind of GEP we have, followed by two registers and their fieldtypes.
      // The data in first register is saved in memory at the address found in second register, with the temp Register where the getelementptr result is stored into.
      | Store of (Flavor * FieldType * LLVM_Arg * FieldType * LLVM_Arg * LLVM_Arg)
+     // special case Store
+     // store i8* getelementptr([9 x i8]* @stringconst_0s, i64 0, i64 0), i8** %reg_41
+     | StrStore of (FieldType * LLVM_Arg * string * FieldType * LLVM_Arg)
        // Br is made up of the i1 field to check (a LLVM_ARG), the label to go to if it's true, and the label to go to if it's false.
      | Br of (LLVM_Arg * string * string)
        // Looks like br %Label3. Used to unconditionally branch to %Label3
